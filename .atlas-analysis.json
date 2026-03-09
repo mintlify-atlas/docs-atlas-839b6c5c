@@ -1,0 +1,62 @@
+{
+  "projectType": "general",
+  "projectName": "TDD Workshop - React",
+  "projectDescription": "A hands-on workshop for learning Test-Driven Development by building a Mercadona mini-app step by step.",
+  "theme": "almond",
+  "primaryColor": "#00A651",
+  "lightColor": "#E8F5E9",
+  "darkColor": "#004D26",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "setup"
+        ]
+      },
+      {
+        "group": "Workshop Guide",
+        "pages": [
+          "tdd-methodology",
+          "how-to-work",
+          "test-structure"
+        ]
+      },
+      {
+        "group": "Iterations",
+        "pages": [
+          "iterations/iteration-1",
+          "iterations/iteration-2",
+          "iterations/iteration-3",
+          "iterations/iteration-4",
+          "iterations/iteration-5"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/tech-stack",
+          "reference/types",
+          "reference/api-endpoints",
+          "reference/commands"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "5 iterative TDD exercises",
+    "Pre-written test cases as it.todo()",
+    "Mock API with MSW",
+    "React 19 + TypeScript",
+    "GitHub Codespaces ready"
+  ],
+  "publicApiSurface": [
+    "GET /categories",
+    "GET /products",
+    "GET /categories/:slug",
+    "GET /categories/:slug/products",
+    "Category interface",
+    "Product interface"
+  ]
+}

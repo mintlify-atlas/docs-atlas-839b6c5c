@@ -1,0 +1,112 @@
+---
+title: Introduction
+description: Learn Test-Driven Development by building a Mercadona mini-app step by step through practical iterations
+---
+
+# Introduction
+
+Welcome to the TDD Workshop! This is a hands-on workshop designed to teach you **Test-Driven Development (TDD)** by building a Mercadona mini-app from the ground up.
+
+## What You'll Build
+
+You'll start with a simple "Hello World" application and progressively add functionality iteration by iteration, always following the **Red-Green-Refactor** cycle:
+
+<Steps>
+  <Step title="Red">
+    Write a test that fails
+  </Step>
+  <Step title="Green">
+    Implement the minimum code to make it pass
+  </Step>
+  <Step title="Refactor">
+    Clean up the code without breaking anything
+  </Step>
+</Steps>
+
+The tests are pre-written as `it.todo()` stubs. Your job is to implement them one by one, following the TDD cycle.
+
+## Learning Objectives
+
+By completing this workshop, you will:
+
+- Master the **Red-Green-Refactor** TDD workflow
+- Learn to write effective tests with **Vitest** and **React Testing Library**
+- Practice API mocking with **MSW** (Mock Service Worker)
+- Build routing with **React Router**
+- Manage state with React's **Context API**
+- Work with modern React patterns using **React 19** and **TypeScript**
+
+## The 5 Iterations
+
+<CardGroup cols={2}>
+  <Card title="Iteration 1: Category List" icon="list">
+    Fetch categories from the API and render them in the navigation. MSW handler for `GET /categories` is already configured.
+  </Card>
+  
+  <Card title="Iteration 2: Product List" icon="grid">
+    Display products on the home page with prices formatted in euros. The `ProductCard` component is provided as a static template.
+  </Card>
+  
+  <Card title="Iteration 3: Navigation & Routing" icon="route">
+    Implement navigation between categories using React Router. Handle 404 errors for non-existent categories.
+  </Card>
+  
+  <Card title="Iteration 4: Toggle Card/List View" icon="toggle-on">
+    Add global state with Context API to switch between card and list views. The `Toggle` component is provided.
+  </Card>
+  
+  <Card title="Iteration 5: Product Modal" icon="window">
+    Open a native browser dialog to show product details. The `ProductDetail` component is provided as a static template.
+  </Card>
+</CardGroup>
+
+## Tech Stack
+
+This workshop uses a modern React stack:
+
+- **React 19** with **TypeScript** for type safety
+- **Vitest** and **React Testing Library** for testing
+- **MSW** (Mock Service Worker) for API mocking
+- **React Router** for navigation
+- **CSS with BEM methodology** for styling
+
+<Note>
+  All tests are located in `src/pages/home/__tests__/Home.test.tsx` and `src/pages/category-detail/__tests__/CategoryDetail.test.tsx`, organized by iteration.
+</Note>
+
+## Data Types
+
+You'll work with two main data types:
+
+<CodeGroup>
+```typescript Category
+interface Category {
+  id: number
+  displayName: string
+  slug: string
+}
+```
+
+```typescript Product
+interface Product {
+  id: number
+  displayName: string
+  image: string
+  price: number
+  categoryId: number
+  description?: string
+}
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Set Up Your Environment" icon="gear" href="/setup">
+    Get started with GitHub Codespaces or local setup
+  </Card>
+  
+  <Card title="Start Iteration 1" icon="play" href="/iterations/iteration-1">
+    Begin building the category list
+  </Card>
+</CardGroup>

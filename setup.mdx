@@ -1,0 +1,194 @@
+---
+title: Setup
+description: Set up the TDD Workshop environment using GitHub Codespaces or run it locally with Node.js 24+
+---
+
+# Setup
+
+You have two options to set up the workshop environment: use **GitHub Codespaces** for a zero-install experience in your browser, or run it **locally** on your machine.
+
+## Option A: GitHub Codespaces (Recommended)
+
+The easiest way to get started is with GitHub Codespaces. No installation required!
+
+<Steps>
+  <Step title="Navigate to the Repository">
+    Go to [github.com/mercadona/mo.tdd-workshop.web](https://github.com/mercadona/mo.tdd-workshop.web)
+  </Step>
+  
+  <Step title="Create a Codespace">
+    Click **Code** → **Codespaces** → **Create codespace on master**
+    
+    <Note>
+      The first launch takes approximately 1-2 minutes while the environment is being set up.
+    </Note>
+  </Step>
+  
+  <Step title="Wait for Setup">
+    The Codespace will automatically:
+    - Install Node.js 24
+    - Install all dependencies
+    - Configure the development environment
+    
+    Once ready, you'll have VS Code running in your browser!
+  </Step>
+  
+  <Step title="Start Working">
+    You're all set! The environment is ready to use.
+  </Step>
+</Steps>
+
+### Running the Application in Codespaces
+
+Once your Codespace is ready, you can run the following commands in the integrated terminal:
+
+<CodeGroup>
+```bash npm test
+npm test
+```
+
+```bash npm start
+npm start
+```
+</CodeGroup>
+
+<Note>
+  When you run `npm start`, the development server will start on port **5173**. Codespaces will automatically forward the port and provide a link to open the app in a new browser tab.
+</Note>
+
+## Option B: Local Setup
+
+Prefer to work on your local machine? Follow these steps.
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js 24+** (recommended: 24.13.1)
+- **npm 11+**
+
+<Warning>
+  This workshop requires Node.js 24 or higher. Earlier versions are not supported.
+</Warning>
+
+### Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone git@github.com:mercadona/mo.tdd-workshop.web.git
+    ```
+  </Step>
+  
+  <Step title="Navigate to the Directory">
+    ```bash
+    cd mo.tdd-workshop.web
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+    </CodeGroup>
+    
+    This will install all required packages including:
+    - React 19 and React DOM
+    - TypeScript
+    - Vitest and React Testing Library
+    - MSW (Mock Service Worker)
+    - React Router
+  </Step>
+</Steps>
+
+### Running the Application Locally
+
+After installation, you can use these commands:
+
+<CodeGroup>
+```bash npm test
+npm test
+```
+
+```bash npm start
+npm start
+```
+
+```bash npm typecheck
+npm run typecheck
+```
+
+```bash npm build
+npm run build
+```
+</CodeGroup>
+
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run tests in watch mode with Vitest |
+| `npm start` | Start the development server on `localhost:5173` |
+| `npm run typecheck` | Run TypeScript type checking |
+| `npm run build` | Create a production build |
+
+## Verify Your Setup
+
+To confirm everything is working correctly:
+
+<Steps>
+  <Step title="Run Tests">
+    Execute `npm test` in your terminal. You should see:
+    - The initial "Hello World" test passing ✓
+    - Multiple `todo` tests for the 5 iterations
+    
+    ```bash
+    ✓ should render correctly the home
+    ○ Iteración 1 - Listado de categorías (1)
+    ○ Iteración 2 - Listado de productos (1)
+    ○ Iteración 4 - Toggle card/list view (2)
+    ○ Iteración 5 - Modal de producto (4)
+    ```
+  </Step>
+  
+  <Step title="Start the Dev Server">
+    Run `npm start` and open `http://localhost:5173` in your browser.
+    
+    You should see a simple page with "Hello World!" displayed.
+  </Step>
+</Steps>
+
+<Note>
+  The development server runs on port **5173** by default. Make sure this port is available on your machine.
+</Note>
+
+## What's Next?
+
+Now that your environment is ready, you can start implementing the iterations!
+
+<CardGroup cols={2}>
+  <Card title="Understanding the Workshop" icon="book" href="/introduction">
+    Learn about the TDD cycle and the 5 iterations
+  </Card>
+  
+  <Card title="Start Iteration 1" icon="play" href="/iterations/iteration-1">
+    Begin with the category list feature
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port 5173 is already in use">
+    If you see an error about port 5173 being in use, you can either:
+    - Stop the process using that port
+    - Modify the port in `vite.config.ts`
+  </Accordion>
+  
+  <Accordion title="Tests are not running in watch mode">
+    Make sure you're running `npm test` (not `npm run test`). Vitest is configured to run in watch mode by default.
+  </Accordion>
+  
+  <Accordion title="MSW handlers not working">
+    Ensure you've installed all dependencies with `npm install`. MSW requires a service worker to be set up in the `public` directory, which is configured automatically during installation.
+  </Accordion>
+</AccordionGroup>

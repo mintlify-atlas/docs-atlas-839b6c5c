@@ -1,0 +1,104 @@
+---
+title: Tech Stack
+description: Technologies and tools used in the TDD Workshop application
+---
+
+The TDD Workshop application is built with modern web technologies focused on developer experience and testing capabilities.
+
+## Core Framework
+
+<ParamField path="React" type="19.2.4">
+  The latest version of React with improved concurrent rendering features. Used for building the user interface with function components and hooks.
+</ParamField>
+
+<ParamField path="TypeScript" type="5.9.3">
+  Provides static type checking to catch errors early and improve code quality. All source code is written in TypeScript for better maintainability.
+</ParamField>
+
+<ParamField path="Vite" type="7.2.7">
+  Lightning-fast build tool and development server. Provides instant hot module replacement (HMR) and optimized production builds.
+</ParamField>
+
+## Testing
+
+<ParamField path="Vitest" type="4.0.18">
+  Fast unit test framework with native ESM support and Vite integration. Runs tests in watch mode for instant feedback during TDD.
+</ParamField>
+
+<ParamField path="React Testing Library" type="16.3.2">
+  Testing utilities that encourage good testing practices by querying components the way users interact with them.
+</ParamField>
+
+<ParamField path="@testing-library/jest-dom" type="6.9.1">
+  Custom matchers for asserting on DOM elements (e.g., `toBeInTheDocument`, `toHaveClass`).
+</ParamField>
+
+<ParamField path="@testing-library/user-event" type="14.6.1">
+  Simulates real user interactions like clicks, typing, and navigation for more realistic testing.
+</ParamField>
+
+<ParamField path="MSW (Mock Service Worker)" type="2.12.10">
+  API mocking library that intercepts network requests at the network level. Allows testing components with realistic API interactions without a backend server.
+</ParamField>
+
+<ParamField path="jsdom" type="28.1.0">
+  JavaScript implementation of web standards for Node.js. Enables running browser-based tests in Node.js environment.
+</ParamField>
+
+## Routing
+
+<ParamField path="React Router" type="7.13.1">
+  Declarative routing for React applications. Handles navigation between pages and URL parameter parsing.
+</ParamField>
+
+<ParamField path="history" type="5.3.0">
+  Session history management library used internally by React Router.
+</ParamField>
+
+## Utilities
+
+<ParamField path="classnames" type="2.5.1">
+  Utility for conditionally joining CSS class names together. Simplifies dynamic className generation based on state.
+</ParamField>
+
+<ParamField path="normalize.css" type="8.0.1">
+  CSS reset that makes browsers render elements more consistently. Provides a clean baseline for custom styles.
+</ParamField>
+
+## Styling
+
+<ParamField path="CSS with BEM" type="methodology">
+  Block Element Modifier methodology for writing maintainable and scalable CSS. Keeps styles modular and prevents naming conflicts.
+</ParamField>
+
+## Development Tools
+
+<ParamField path="ESLint" type="9.39.2">
+  Linting tool for identifying and fixing code quality issues. Configured with TypeScript and React plugins.
+</ParamField>
+
+<ParamField path="Prettier" type="3.7.4">
+  Opinionated code formatter that enforces consistent code style across the project.
+</ParamField>
+
+<ParamField path="vite-tsconfig-paths" type="6.1.1">
+  Vite plugin that resolves TypeScript path aliases defined in tsconfig.json.
+</ParamField>
+
+## Runtime Requirements
+
+<ParamField path="Node.js" type="24.13.1">
+  JavaScript runtime required to run the development server and build tools. Version 24 or higher is required.
+  
+  The project uses Volta for Node.js version management, ensuring all developers use the same Node.js version.
+</ParamField>
+
+## Why These Technologies?
+
+- **React 19**: Latest features and performance improvements
+- **TypeScript**: Catch errors at compile time instead of runtime
+- **Vitest**: Fastest test runner with excellent Vite integration
+- **MSW**: Test with realistic API mocking without coupling to implementation details
+- **React Router**: Industry standard for React navigation
+- **BEM CSS**: Proven methodology for scalable component styling
+- **Vite**: Dramatically faster than webpack for both dev server and builds

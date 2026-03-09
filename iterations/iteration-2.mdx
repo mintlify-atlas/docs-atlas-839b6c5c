@@ -1,0 +1,316 @@
+---
+title: "Iteration 2: Product Listing"
+description: "Display products on the home page with properly formatted prices in euros"
+---
+
+## Overview
+
+In this iteration, you'll fetch products from the API and display them on the home page using product cards. You'll also learn to format prices correctly in euros using the Intl API.
+
+<img src="https://github.com/user-attachments/assets/cdadcc73-2002-4fe1-b7f4-e25dd76a81d8" alt="Product listing screenshot" width="1183" height="1006" />
+
+## Learning Objectives
+
+- Create and implement MSW handlers for new endpoints
+- Work with JSON fixtures for mock data
+- Make components dynamic by accepting props
+- Format currency with the Intl API
+- Continue practicing TDD workflow
+
+## What's Provided
+
+<Note>
+**ProductCard Component:** A static component exists at `src/components/product-card/ProductCard.tsx`. You need to make it dynamic by accepting props.
+
+**Products Fixture:** The file `src/mocks/products-fixtures.json` contains 24 products (8 per category).
+</Note>
+
+**Product type definition (src/types/index.ts):**
+
+```typescript
+interface Product {
+  id: number
+  displayName: string
+  image: string
+  price: number
+  categoryId: number
+  description?: string
+}
+```
+
+**Example product from fixture:**
+
+```json
+{
+  "id": 3830,
+  "displayName": "Aguacate",
+  "image": "/images/aguacate-pieza-3830.jpg",
+  "price": 1.2,
+  "categoryId": 1,
+  "description": "Aguacate cremoso y nutritivo. Rico en grasas saludables."
+}
+```
+
+## Test Cases to Implement
+
+Open `src/pages/home/__tests__/Home.test.tsx` and implement this test:
+
+```typescript
+describe('Iteración 2 - Listado de productos', () => {
+  it.todo('should display the products with their prices correctly formatted')
+})
+```
+
+<Steps>
+
+### Write the test
+
+Change `it.todo` to `it` and implement:
+
+```typescript
+it('should display the products with their prices correctly formatted', async () => {
+  render(<App />)
+  
+  // Wait for products to load
+  const productName = await screen.findByText('Aguacate')
+  expect(productName).toBeInTheDocument()
+  
+  // Verify price is formatted correctly
+  const formattedPrice = screen.getByText('1,20 €')
+  expect(formattedPrice).toBeInTheDocument()
+  
+  // Verify multiple products are displayed
+  const allProducts = screen.getAllByRole('article')
+  expect(allProducts.length).toBeGreaterThan(0)
+})
+```
+
+### Run the test - it should fail (RED)
+
+```bash
+npm test
+```
+
+The test fails because:
+- No MSW handler exists for `/products`
+- Products aren't being fetched
+- ProductCard doesn't accept props
+
+### Create the MSW handler
+
+In `src/mocks/handlers.ts`, add the products endpoint:
+
+```typescript
+import productsFixtures from './products-fixtures.json'
+
+export const handlers = [
+  http.get('/categories', () => {
+    return HttpResponse.json(categoriesFixtures)
+  }),
+  // New handler for products
+  http.get('/products', () => {
+    return HttpResponse.json(productsFixtures)
+  }),
+]
+```
+
+### Make ProductCard dynamic
+
+Update `src/components/product-card/ProductCard.tsx` to accept props:
+
+```typescript
+import './ProductCard.css'
+import type { Product } from '../../types'
+
+interface ProductCardProps {
+  product: Product
+}
+
+export const ProductCard = ({ product }: ProductCardProps) => {
+  const formattedPrice = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(product.price)
+
+  return (
+    <article className="product-card product-card--card">
+      <div className="product-card__image-wrapper">
+        <img
+          className="product-card__image"
+          src={product.image}
+          alt={product.displayName}
+        />
+      </div>
+      <div className="product-card__content">
+        <h3 className="product-card__name">{product.displayName}</h3>
+        <div className="product-card__footer">
+          <span className="product-card__price">{formattedPrice}</span>
+        </div>
+      </div>
+    </article>
+  )
+}
+```
+
+### Fetch and render products in Home
+
+Update `src/pages/home/Home.tsx`:
+
+```typescript
+import { useEffect, useState } from 'react'
+import { ProductCard } from '../../components/product-card/ProductCard'
+import type { Product } from '../../types'
+import './Home.css'
+
+const Home = () => {
+  const [products, setProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    fetch('/products')
+      .then(res => res.json())
+      .then(data => setProducts(data))
+  }, [])
+
+  return (
+    <section className="home__products-grid">
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </section>
+  )
+}
+
+export { Home }
+```
+
+### Verify tests pass (GREEN)
+
+```bash
+npm test
+```
+
+All tests should now pass!
+
+### Refactor if needed
+
+Consider:
+- Extracting the price formatting logic to a utility function
+- Creating a custom hook for fetching products
+- Adding loading states
+
+</Steps>
+
+## Price Formatting with Intl
+
+<Note>
+The `Intl.NumberFormat` API provides locale-aware number formatting. For Spanish euros:
+
+```typescript
+new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+}).format(1.2) // "1,20 €"
+```
+
+Notice:
+- Decimal separator is a comma (`,`)
+- Euro symbol appears after the amount
+- Always shows 2 decimal places
+</Note>
+
+## Important: Card View Behavior
+
+<Tip>
+In **card view**, product descriptions should **NOT** be displayed. Only show:
+- Product image
+- Product name
+- Product price
+
+Descriptions will only appear in **list view** (Iteration 4).
+</Tip>
+
+## Implementation Hints
+
+<Accordion title="How do I create an MSW handler?">
+
+Import the fixtures and create a handler that returns them:
+
+```typescript
+import { http, HttpResponse } from 'msw'
+import productsFixtures from './products-fixtures.json'
+
+export const handlers = [
+  http.get('/products', () => {
+    return HttpResponse.json(productsFixtures)
+  }),
+]
+```
+
+</Accordion>
+
+<Accordion title="How do I make a component accept props?">
+
+Define a props interface and destructure the props:
+
+```typescript
+interface ProductCardProps {
+  product: Product
+}
+
+export const ProductCard = ({ product }: ProductCardProps) => {
+  // Use product.displayName, product.price, etc.
+}
+```
+
+</Accordion>
+
+<Accordion title="Why extract price formatting to a variable?">
+
+It keeps JSX clean and makes the formatting logic reusable:
+
+```typescript
+const formattedPrice = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+}).format(product.price)
+
+// Then in JSX:
+<span className="product-card__price">{formattedPrice}</span>
+```
+
+</Accordion>
+
+## Common Issues
+
+<Tip>
+**Issue:** Prices show as "1.2 €" instead of "1,20 €"
+
+**Solution:** Make sure you're using `'es-ES'` locale, not `'en-US'`. The locale determines decimal separators and currency symbol placement.
+</Tip>
+
+<Tip>
+**Issue:** "productsFixtures is not defined"
+
+**Solution:** Remember to import the fixture at the top of `handlers.ts`:
+```typescript
+import productsFixtures from './products-fixtures.json'
+```
+</Tip>
+
+## Verification
+
+Run the app and verify:
+
+```bash
+npm start
+```
+
+- Navigate to `http://localhost:5173`
+- You should see 24 products displayed in a grid
+- Each product should show an image, name, and price
+- Prices should be formatted as "X,XX €"
+- No descriptions should be visible in card view
+
+## Next Steps
+
+Great work! You've successfully implemented product listing with formatted prices. Next up is [Iteration 3: Navigation and Routing](/iterations/iteration-3) where you'll add React Router to navigate between categories.

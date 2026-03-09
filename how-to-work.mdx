@@ -1,0 +1,428 @@
+---
+title: How to Work Through the Workshop
+description: Step-by-step workflow for completing TDD iterations using it.todo() pattern
+---
+
+# How to Work Through the Workshop
+
+This guide explains the practical workflow for completing the TDD workshop iterations. You'll learn how to convert `it.todo()` placeholders into working tests and features.
+
+## The it.todo() Pattern
+
+The workshop uses `it.todo()` to mark tests that need implementation. This is a standard testing library feature that:
+
+- Documents what needs to be built
+- Shows up in test output as "todo"
+- Doesn't run (so it won't fail or pass)
+- Acts as your task list
+
+### Example from the Workshop
+
+```tsx title="src/pages/home/__tests__/Home.test.tsx"
+describe('Iteración 1 - Listado de categorías', () => {
+  it.todo('should render the list of categories in the navigation')
+})
+
+describe('Iteración 2 - Listado de productos', () => {
+  it.todo('should display the products with their prices correctly formatted')
+})
+
+describe('Iteración 4 - Toggle card/list view', () => {
+  it.todo('should display product descriptions when switching to list view')
+  it.todo('should hide product descriptions when switching back to card view')
+})
+```
+
+<Note>
+Notice how tests are organized by iteration with clear, descriptive names. This structure guides you through the workshop.
+</Note>
+
+## Your Workflow: The 4-Step Process
+
+Follow this workflow for each test:
+
+<Steps>
+  <Step title="Change it.todo() to it()">
+    Pick the next test and convert it from a todo to an actual test function.
+    
+    **Before**:
+    ```tsx
+    it.todo('should render the list of categories in the navigation')
+    ```
+    
+    **After**:
+    ```tsx
+    it('should render the list of categories in the navigation', async () => {
+      // Test code will go here
+    })
+    ```
+    
+    <Tip>
+    Make it `async` if you'll be waiting for elements to appear or simulating user interactions.
+    </Tip>
+  </Step>
+
+  <Step title="Write the test (should FAIL)">
+    Write the test assertions describing the behavior you want. Run tests and **verify it fails**.
+    
+    ```tsx
+    it('should render the list of categories in the navigation', async () => {
+      render(<App />)
+      
+      const navigation = screen.getByRole('navigation')
+      const categories = within(navigation).getAllByRole('listitem')
+      
+      expect(categories).toHaveLength(3)
+      expect(categories[0]).toHaveTextContent('Fruta y verdura')
+      expect(categories[1]).toHaveTextContent('Cereales')
+      expect(categories[2]).toHaveTextContent('Aperitivos')
+    })
+    ```
+    
+    **Expected output**:
+    ```bash
+    ✕ should render the list of categories in the navigation
+      TestingLibraryElementError: Unable to find an accessible element with the role "navigation"
+    ```
+    
+    <Info>
+    The test fails because we haven't implemented the navigation component yet. This is **RED** in the Red-Green-Refactor cycle.
+    </Info>
+  </Step>
+
+  <Step title="Implement code (should PASS)">
+    Write the minimal code needed to make the test pass.
+    
+    ```tsx title="src/components/navigation/Navigation.tsx"
+    export const Navigation = () => {
+      const [categories, setCategories] = useState<Category[]>([])
+      
+      useEffect(() => {
+        fetch('/categories')
+          .then(res => res.json())
+          .then(data => setCategories(data))
+      }, [])
+      
+      return (
+        <nav role="navigation">
+          <ul>
+            {categories.map(category => (
+              <li key={category.id}>{category.displayName}</li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+    ```
+    
+    **Expected output**:
+    ```bash
+    ✓ should render the list of categories in the navigation
+    ```
+    
+    This is **GREEN**—the test passes!
+  </Step>
+
+  <Step title="Refactor (tests still PASS)">
+    Clean up your code. Add types, extract functions, improve naming—anything that makes it better while tests stay green.
+    
+    ```tsx
+    // Add proper TypeScript types
+    interface Category {
+      id: number
+      displayName: string
+      slug: string
+    }
+    
+    // Add CSS classes for styling
+    return (
+      <nav className="navigation" role="navigation">
+        <ul className="navigation__list">
+          {categories.map(category => (
+            <li key={category.id} className="navigation__list-item">
+              {category.displayName}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+    ```
+    
+    **Expected output**:
+    ```bash
+    ✓ should render the list of categories in the navigation
+    ```
+    
+    Tests still pass—refactoring successful!
+  </Step>
+</Steps>
+
+## Running Tests
+
+Keep tests running in watch mode throughout the workshop:
+
+```bash
+npm test
+```
+
+Vitest will automatically re-run tests when you save files. Watch the output to see:
+
+- **Todo**: Tests marked with `it.todo()`
+- **Pass**: ✓ Tests that passed
+- **Fail**: ✕ Tests that failed (with error details)
+
+### Test Output Example
+
+```bash
+ Test Files  2 passed (2)
+      Tests  1 passed | 4 todo (5)
+   Start at  10:23:45
+   Duration  1.23s
+
+ ✓ src/pages/home/__tests__/Home.test.tsx (1)
+   ✓ should render correctly the home
+   ○ Iteración 1 - Listado de categorías (1 todo)
+   ○ Iteración 2 - Listado de productos (1 todo)
+   ○ Iteración 4 - Toggle card/list view (2 todo)
+```
+
+## Complete Example: Iteration 2
+
+Let's walk through implementing a complete test from Iteration 2.
+
+### Starting Point
+
+```tsx title="src/pages/home/__tests__/Home.test.tsx"
+import { screen, render } from '@testing-library/react'
+import { App } from 'app'
+
+describe('Iteración 2 - Listado de productos', () => {
+  it.todo('should display the products with their prices correctly formatted')
+})
+```
+
+### Step 1: Convert to Real Test
+
+```tsx
+import { screen, render } from '@testing-library/react'
+import { within } from '@testing-library/react'
+import { App } from 'app'
+
+describe('Iteración 2 - Listado de productos', () => {
+  it('should display the products with their prices correctly formatted', async () => {
+    render(<App />)
+    
+    // Wait for products to load from MSW
+    const products = await screen.findAllByRole('article')
+    
+    // Verify we have all 24 products
+    expect(products).toHaveLength(24)
+    
+    // Check first product has correct name and formatted price
+    const firstProduct = products[0]
+    expect(within(firstProduct).getByText('Aceitunas verdes rellenas de anchoa Hacendado')).toBeInTheDocument()
+    expect(within(firstProduct).getByText('3,00 €')).toBeInTheDocument()
+  })
+})
+```
+
+### Step 2: Watch It Fail
+
+```bash
+✕ should display the products with their prices correctly formatted
+  TestingLibraryElementError: Unable to find role "article"
+```
+
+### Step 3: Implement the Feature
+
+First, add the MSW handler:
+
+```tsx title="src/mocks/handlers.ts"
+import { http, HttpResponse } from 'msw'
+import productsFixtures from './products-fixtures.json'
+
+export const handlers = [
+  // ... existing handlers ...
+  
+  http.get('/products', () => {
+    return HttpResponse.json(productsFixtures)
+  }),
+]
+```
+
+Then implement the product list:
+
+```tsx title="src/pages/home/Home.tsx"
+export const Home = () => {
+  const [products, setProducts] = useState<Product[]>([])
+  
+  useEffect(() => {
+    fetch('/products')
+      .then(res => res.json())
+      .then(data => setProducts(data))
+  }, [])
+  
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(price)
+  }
+  
+  return (
+    <section className="home__products-grid">
+      {products.map(product => (
+        <article key={product.id}>
+          <img src={product.image} alt={product.displayName} />
+          <h3>{product.displayName}</h3>
+          <p>{formatPrice(product.price)}</p>
+        </article>
+      ))}
+    </section>
+  )
+}
+```
+
+### Step 4: Verify It Passes
+
+```bash
+✓ should display the products with their prices correctly formatted
+```
+
+Success! Now you can refactor if needed (extract ProductCard component, create useProducts hook, etc.).
+
+## Tips for Success
+
+<Accordion title="Work in small increments">
+Implement one test at a time. Don't skip ahead or try to implement multiple iterations at once.
+
+**Good**: Complete Iteration 1, then move to Iteration 2
+
+**Bad**: Try to implement routing (Iteration 3) before products exist (Iteration 2)
+</Accordion>
+
+<Accordion title="Read the test name carefully">
+The test description tells you exactly what to build:
+
+```tsx
+it('should display product descriptions when switching to list view')
+//   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//   This tells you:
+//   - Product descriptions exist
+//   - They're hidden by default
+//   - They appear when view mode changes to "list"
+```
+</Accordion>
+
+<Accordion title="Uncomment imports as needed">
+The test files have commented imports. Uncomment them when you need them:
+
+```tsx
+// Initially:
+// import { within } from '@testing-library/react'
+// import { userEvent } from '@testing-library/user-event'
+
+// After uncommenting:
+import { within } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+```
+</Accordion>
+
+<Accordion title="Use the provided fixtures">
+MSW handlers should use the fixture data from `src/mocks/`:
+
+```tsx
+import categoriesFixtures from './categories-fixtures.json'
+import productsFixtures from './products-fixtures.json'
+
+http.get('/categories', () => {
+  return HttpResponse.json(categoriesFixtures)
+})
+```
+
+This ensures tests use the same data every time.
+</Accordion>
+
+<Accordion title="Check optional tests last">
+Tests marked `[OPTIONAL]` are bonus challenges:
+
+```tsx
+it.todo('should navigate to home when clicking the logo [OPTIONAL]')
+it.todo('should highlight the active category in the navigation [OPTIONAL]')
+```
+
+Complete the required tests first, then tackle these if you have time.
+</Accordion>
+
+## Common Pitfalls
+
+<Warning>
+**Pitfall #1: Writing code before the test fails**
+
+Always run tests and see them fail before implementing. If you skip this step, you might write code that doesn't actually satisfy the test.
+</Warning>
+
+<Warning>
+**Pitfall #2: Trying to make multiple tests pass at once**
+
+Focus on one test at a time. Even if you know future tests will need similar code, implement only what the current test requires.
+</Warning>
+
+<Warning>
+**Pitfall #3: Skipping the refactor step**
+
+Don't accumulate technical debt. After each test passes, take a moment to clean up:
+- Extract duplicated code
+- Add proper types
+- Improve variable names
+- Split large functions
+</Warning>
+
+<Warning>
+**Pitfall #4: Not reading error messages**
+
+Test failures tell you exactly what's wrong:
+
+```bash
+TestingLibraryElementError: Unable to find an accessible element with the role "navigation"
+```
+
+This tells you: add a `<nav role="navigation">` element.
+</Warning>
+
+## Workshop File Structure
+
+You'll primarily work in these files:
+
+```
+src/
+├── pages/
+│   ├── home/
+│   │   ├── __tests__/
+│   │   │   └── Home.test.tsx          # Iterations 1, 2, 4, 5
+│   │   └── Home.tsx                    # Your implementation
+│   └── category-detail/
+│       ├── __tests__/
+│       │   └── CategoryDetail.test.tsx # Iterations 3, 5
+│       └── CategoryDetail.tsx          # Your implementation
+├── components/
+│   ├── navigation/                     # You'll create this
+│   ├── product-card/                   # Provided (make it dynamic)
+│   ├── product-detail/                 # Provided (make it dynamic)
+│   └── toggle/                         # Provided (use in Iteration 4)
+└── mocks/
+    ├── handlers.ts                     # Add your MSW handlers here
+    ├── categories-fixtures.json        # Category data
+    └── products-fixtures.json          # Product data
+```
+
+## Next Steps
+
+Ready to start coding? Here's what to do:
+
+1. Open `src/pages/home/__tests__/Home.test.tsx`
+2. Find the first `it.todo()` in "Iteración 1"
+3. Follow the 4-step workflow
+4. Keep `npm test` running to see your progress
+
+For more details on test organization and helpers, see [Test Structure](/test-structure).

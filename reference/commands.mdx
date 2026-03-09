@@ -1,0 +1,286 @@
+---
+title: npm Commands
+description: Available npm scripts for development, testing, and building
+---
+
+All commands are defined in `package.json` and should be run from the project root directory.
+
+## Development
+
+### npm start
+
+Starts the Vite development server with hot module replacement.
+
+```bash
+npm start
+```
+
+<ResponseField name="What it does">
+  - Starts local dev server on `http://localhost:5173`
+  - Enables hot module replacement (HMR) for instant updates
+  - Serves the application with MSW API mocking enabled
+  - Opens automatically in your default browser (in most environments)
+</ResponseField>
+
+<ResponseField name="When to use">
+  Use this while developing features to see changes instantly in the browser.
+</ResponseField>
+
+## Testing
+
+### npm test
+
+Runs tests in watch mode with Vitest.
+
+```bash
+npm test
+```
+
+<ResponseField name="What it does">
+  - Runs all test files matching `**/*.test.{ts,tsx}`
+  - Watches for file changes and re-runs affected tests
+  - Shows test results in terminal with detailed output
+  - Displays code coverage when tests fail (helpful for debugging)
+</ResponseField>
+
+<ResponseField name="When to use">
+  Run this in a separate terminal during TDD. It stays open and re-runs tests automatically as you write code.
+</ResponseField>
+
+**Example output:**
+
+```
+✓ src/pages/home/__tests__/Home.test.tsx (2)
+  ✓ Iteración 1 - Listado de categorías (1)
+    ✓ should render the list of categories in the navigation
+  ○ Iteración 2 - Listado de productos (1)
+    ○ should display the products with their prices correctly formatted
+
+Test Files  1 passed (1)
+     Tests  1 passed | 1 todo (2)
+  Start at  14:32:15
+  Duration  1.24s
+
+Watching for file changes...
+```
+
+### npm run test-staging
+
+Runs tests against staging environment configuration.
+
+```bash
+npm run test-staging
+```
+
+<ResponseField name="What it does">
+  Runs Vitest with `--mode sta` flag, loading environment variables from `.env.sta` if present.
+</ResponseField>
+
+### npm run test:coverage
+
+Runs tests and generates a code coverage report.
+
+```bash
+npm run test:coverage
+```
+
+<ResponseField name="What it does">
+  - Runs all tests once (no watch mode)
+  - Generates coverage report showing which lines are tested
+  - Outputs coverage summary to terminal
+  - Creates detailed HTML report in `coverage/` directory
+</ResponseField>
+
+<ResponseField name="When to use">
+  Use this to check how much of your code is covered by tests before committing or creating a pull request.
+</ResponseField>
+
+## Building
+
+### npm run build
+
+Creates an optimized production build.
+
+```bash
+npm run build
+```
+
+<ResponseField name="What it does">
+  - Compiles TypeScript to JavaScript
+  - Bundles and minifies all code
+  - Optimizes assets (images, CSS)
+  - Outputs to `dist/` directory
+  - Uses default environment variables
+</ResponseField>
+
+### npm run build:sta
+
+Builds for staging environment.
+
+```bash
+npm run build:sta
+```
+
+<ResponseField name="What it does">
+  Same as `npm run build` but loads environment variables from `.env.sta`.
+</ResponseField>
+
+### npm run build:prod
+
+Builds for production environment.
+
+```bash
+npm run build:prod
+```
+
+<ResponseField name="What it does">
+  Same as `npm run build` but loads environment variables from `.env.prod`.
+</ResponseField>
+
+### npm run preview
+
+Previews the production build locally.
+
+```bash
+npm run preview
+```
+
+<ResponseField name="What it does">
+  - Serves the built files from `dist/` directory
+  - Runs on `http://localhost:4173` by default
+  - Useful for testing the production build before deployment
+</ResponseField>
+
+<ResponseField name="When to use">
+  Run this after `npm run build` to verify the production bundle works correctly.
+</ResponseField>
+
+## Code Quality
+
+### npm run typecheck
+
+Checks TypeScript types without emitting files.
+
+```bash
+npm run typecheck
+```
+
+<ResponseField name="What it does">
+  - Runs TypeScript compiler in check mode
+  - Reports all type errors across the project
+  - Does not generate output files
+  - Validates that all types are correct
+</ResponseField>
+
+<ResponseField name="When to use">
+  Run this before committing to catch type errors. Some editors (VS Code) show these errors inline, but this checks the entire project.
+</ResponseField>
+
+**Example output:**
+
+```
+✓ No type errors found
+```
+
+Or if there are errors:
+
+```
+src/pages/home/Home.tsx:12:5 - error TS2322: Type 'string' is not assignable to type 'number'.
+
+Found 1 error.
+```
+
+### npm run lint
+
+Lints TypeScript and TSX files with ESLint.
+
+```bash
+npm run lint
+```
+
+<ResponseField name="What it does">
+  - Checks code for style and quality issues
+  - Uses ESLint with TypeScript and React plugins
+  - Caches results for faster subsequent runs
+  - Reports unused disable directives
+  - Fails if there are any warnings (max warnings = 0)
+</ResponseField>
+
+### npm run lint-fix
+
+Automatically fixes linting issues where possible.
+
+```bash
+npm run lint-fix
+```
+
+<ResponseField name="What it does">
+  Same as `npm run lint` but automatically fixes issues that can be auto-fixed (missing semicolons, spacing, etc.).
+</ResponseField>
+
+### npm run format
+
+Formats code with Prettier.
+
+```bash
+npm run format
+```
+
+<ResponseField name="What it does">
+  - Formats all TypeScript, TSX, CSS, JSON, and Markdown files in `src/`
+  - Enforces consistent code style (indentation, quotes, line breaks)
+  - Caches results for faster subsequent runs
+  - Overwrites files with formatted versions
+</ResponseField>
+
+<ResponseField name="When to use">
+  Run this before committing to ensure consistent code formatting. Many editors can run Prettier on save automatically.
+</ResponseField>
+
+## Common Workflows
+
+<Accordion title="TDD Development Workflow">
+  Open two terminal windows:
+  
+  **Terminal 1 - Tests:**
+  ```bash
+  npm test
+  ```
+  
+  **Terminal 2 - Dev Server:**
+  ```bash
+  npm start
+  ```
+  
+  This gives you instant feedback in both tests and browser as you write code.
+</Accordion>
+
+<Accordion title="Before Committing">
+  ```bash
+  npm run typecheck
+  npm run lint
+  npm run format
+  npm run test:coverage
+  ```
+  
+  Ensures your code passes all quality checks before pushing.
+</Accordion>
+
+<Accordion title="Deployment">
+  ```bash
+  npm run build:prod
+  npm run preview
+  ```
+  
+  Build for production and verify locally before deploying.
+</Accordion>
+
+## Environment Variables
+
+The application supports multiple environments through Vite's mode system:
+
+- **Development** (default): Uses `.env` or `.env.development`
+- **Staging**: `--mode sta` loads `.env.sta`
+- **Production**: `--mode prod` loads `.env.prod`
+
+Currently the application doesn't require environment variables, but this structure supports adding them in the future (API URLs, feature flags, etc.).

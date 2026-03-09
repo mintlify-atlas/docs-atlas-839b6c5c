@@ -1,0 +1,611 @@
+---
+title: Test Structure
+description: Understanding test file organization, describe blocks, testing helpers, and MSW setup
+---
+
+# Test Structure
+
+This guide explains how the workshop's test files are organized and what tools are available for writing tests.
+
+## Test File Organization
+
+The workshop has two main test files, each organized by iteration:
+
+### Home.test.tsx Structure
+
+```tsx title="src/pages/home/__tests__/Home.test.tsx"
+import { screen, render } from '@testing-library/react'
+// import { within } from '@testing-library/react'
+// import { userEvent } from '@testing-library/user-event'
+import { App } from 'app'
+
+// Smoke test - already passing
+it('should render correctly the home', () => {
+  render(<App />)
+  const homeTitle = screen.getByRole('heading', { name: 'Hello World!' })
+  expect(homeTitle).toBeInTheDocument()
+})
+
+// Iteration 1: Categories
+describe('Iteración 1 - Listado de categorías', () => {
+  it.todo('should render the list of categories in the navigation')
+})
+
+// Iteration 2: Products
+describe('Iteración 2 - Listado de productos', () => {
+  it.todo('should display the products with their prices correctly formatted')
+})
+
+// Iteration 4: View toggle
+describe('Iteración 4 - Toggle card/list view', () => {
+  it.todo('should display product descriptions when switching to list view')
+  it.todo('should hide product descriptions when switching back to card view')
+})
+
+// Iteration 5: Product modal
+describe('Iteración 5 - Modal de producto', () => {
+  it.todo('should open a dialog with product details when clicking a product')
+  it.todo('should close the dialog when clicking close button')
+  it.todo('should close the dialog when clicking outside the modal [OPTIONAL]')
+  it.todo('should close the dialog when pressing ESC key [OPTIONAL]')
+})
+```
+
+### CategoryDetail.test.tsx Structure
+
+```tsx title="src/pages/category-detail/__tests__/CategoryDetail.test.tsx"
+// import { render, screen, within } from '@testing-library/react'
+// import { userEvent } from '@testing-library/user-event'
+// import { App } from 'app'
+
+// Iteration 3: Routing
+describe('Iteración 3 - Navegación y routing', () => {
+  it.todo('should navigate to the category page and display the category title')
+  it.todo('should show the category products')
+  it.todo('should navigate to home when clicking the logo [OPTIONAL]')
+  it.todo('should highlight the active category in the navigation [OPTIONAL]')
+  it.todo('should display a not found message when the category does not exist [OPTIONAL]')
+})
+
+// Iteration 5: Product modal from category page
+describe('Iteración 5 - Modal de producto desde categoría', () => {
+  it.todo('should open a dialog with product details when clicking a product from category')
+  it.todo('should close the dialog when clicking close button from category')
+  it.todo('should close the dialog when clicking outside the modal [OPTIONAL]')
+  it.todo('should close the dialog when pressing ESC key [OPTIONAL]')
+})
+```
+
+<Note>
+Notice that Iteration 3 tests are in `CategoryDetail.test.tsx` because they test routing to category pages. Iterations 1, 2, and 4 test the home page functionality.
+</Note>
+
+## Describe Blocks
+
+Tests are organized using `describe()` blocks:
+
+```tsx
+describe('Iteración 1 - Listado de categorías', () => {
+  it('should render the list of categories in the navigation', async () => {
+    // Test implementation
+  })
+})
+```
+
+### Why Use Describe Blocks?
+
+- **Organization**: Group related tests together
+- **Documentation**: Clear labels show what iteration you're working on
+- **Setup**: Can add `beforeEach` for iteration-specific setup
+- **Output**: Test results are grouped in the terminal
+
+### Example with beforeEach
+
+```tsx
+describe('Iteración 3 - Navegación y routing', () => {
+  beforeEach(() => {
+    // Navigate to category page before each test
+    window.history.pushState({}, '', '/categories/fruta-y-verdura')
+  })
+  
+  it('should display the category title', () => {
+    render(<App />)
+    expect(screen.getByText('Fruta y verdura')).toBeInTheDocument()
+  })
+  
+  it('should show the category products', async () => {
+    render(<App />)
+    const products = await screen.findAllByRole('article')
+    expect(products).toHaveLength(8) // 8 products in this category
+  })
+})
+```
+
+## Testing Helpers
+
+The workshop uses React Testing Library, which provides several helper functions:
+
+### render()
+
+Renders a React component for testing:
+
+```tsx
+import { render } from '@testing-library/react'
+import { App } from 'app'
+
+it('should render the app', () => {
+  render(<App />)
+  // Component is now in the virtual DOM
+})
+```
+
+<Info>
+Always render `<App />` rather than individual components. This ensures your tests include routing, context providers, and other app-level setup.
+</Info>
+
+### screen
+
+Query the rendered output to find elements:
+
+```tsx
+import { screen, render } from '@testing-library/react'
+
+it('should display a heading', () => {
+  render(<App />)
+  
+  // Find element by role and accessible name
+  const heading = screen.getByRole('heading', { name: 'Hello World!' })
+  expect(heading).toBeInTheDocument()
+})
+```
+
+#### Common screen Queries
+
+| Query | When to Use | Example |
+|-------|-------------|----------|
+| `getByRole()` | Find by ARIA role (preferred) | `screen.getByRole('button', { name: 'Submit' })` |
+| `getByText()` | Find by text content | `screen.getByText('Fruta y verdura')` |
+| `getByLabelText()` | Find form inputs by label | `screen.getByLabelText('Email')` |
+| `getAllByRole()` | Find multiple elements | `screen.getAllByRole('listitem')` |
+| `findByRole()` | Async: wait for element to appear | `await screen.findByRole('dialog')` |
+| `queryByRole()` | Returns null if not found | `screen.queryByRole('dialog')` |
+
+<Tip>
+Prefer `getByRole()` over other queries—it tests accessibility and is more resilient to markup changes.
+</Tip>
+
+### within()
+
+Scope queries to a specific container:
+
+```tsx
+import { screen, render, within } from '@testing-library/react'
+
+it('should render categories in navigation', async () => {
+  render(<App />)
+  
+  // First, find the navigation container
+  const navigation = screen.getByRole('navigation')
+  
+  // Then search within it
+  const categories = within(navigation).getAllByRole('listitem')
+  
+  expect(categories).toHaveLength(3)
+  expect(categories[0]).toHaveTextContent('Fruta y verdura')
+})
+```
+
+#### Why Use within()?
+
+It prevents false positives. Imagine you have categories in navigation AND products in main content:
+
+```tsx
+// ❌ BAD: Might find listitems anywhere
+const items = screen.getAllByRole('listitem')
+expect(items).toHaveLength(3) // Fails: finds categories + products
+
+// ✅ GOOD: Only finds listitems in navigation
+const navigation = screen.getByRole('navigation')
+const categories = within(navigation).getAllByRole('listitem')
+expect(categories).toHaveLength(3) // Passes: only categories
+```
+
+### userEvent
+
+Simulate user interactions:
+
+```tsx
+import { screen, render } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+
+it('should open dialog when clicking product', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Wait for products to load
+  const product = await screen.findByText('Plátano de Canarias IGP')
+  
+  // Simulate click
+  await user.click(product)
+  
+  // Verify dialog opened
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toBeInTheDocument()
+})
+```
+
+#### Common User Events
+
+| Method | What It Does | Example |
+|--------|--------------|----------|
+| `click(element)` | Click an element | `await user.click(button)` |
+| `dblClick(element)` | Double-click | `await user.dblClick(row)` |
+| `type(element, text)` | Type into input | `await user.type(input, 'test@example.com')` |
+| `clear(element)` | Clear input value | `await user.clear(input)` |
+| `keyboard('{Enter}')` | Press keyboard key | `await user.keyboard('{Escape}')` |
+
+<Note>
+Always `await` userEvent methods—they return promises and simulate realistic timing.
+</Note>
+
+## Real Test Examples from the Workshop
+
+Let's look at complete test examples you'll implement:
+
+### Example 1: Basic Rendering (Iteration 1)
+
+```tsx
+it('should render the list of categories in the navigation', async () => {
+  render(<App />)
+  
+  // Find the navigation element
+  const navigation = screen.getByRole('navigation')
+  
+  // Find all list items within navigation
+  const categories = within(navigation).getAllByRole('listitem')
+  
+  // Verify count
+  expect(categories).toHaveLength(3)
+  
+  // Verify content
+  expect(categories[0]).toHaveTextContent('Fruta y verdura')
+  expect(categories[1]).toHaveTextContent('Cereales')
+  expect(categories[2]).toHaveTextContent('Aperitivos')
+})
+```
+
+### Example 2: Async Data Loading (Iteration 2)
+
+```tsx
+it('should display the products with their prices correctly formatted', async () => {
+  render(<App />)
+  
+  // Use findAllByRole to wait for async data
+  const products = await screen.findAllByRole('article')
+  
+  // Should have 24 products from fixtures
+  expect(products).toHaveLength(24)
+  
+  // Check first product's price is formatted
+  const firstProduct = products[0]
+  const price = within(firstProduct).getByText(/3,00\s*€/)
+  expect(price).toBeInTheDocument()
+})
+```
+
+<Info>
+Use `findBy` queries (not `getBy`) when elements appear after data fetching. They wait up to 1 second for the element.
+</Info>
+
+### Example 3: User Interaction (Iteration 4)
+
+```tsx
+it('should display product descriptions when switching to list view', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Wait for products to load
+  await screen.findAllByRole('article')
+  
+  // Initially, descriptions should not be visible
+  const firstDescription = screen.queryByText(/Aceitunas verdes rellenas con anchoas/)
+  expect(firstDescription).not.toBeInTheDocument()
+  
+  // Find and click the toggle
+  const toggle = screen.getByRole('button', { name: /list view/i })
+  await user.click(toggle)
+  
+  // Now descriptions should appear
+  expect(screen.getByText(/Aceitunas verdes rellenas con anchoas/)).toBeInTheDocument()
+})
+```
+
+### Example 4: Navigation (Iteration 3)
+
+```tsx
+it('should navigate to the category page and display the category title', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Wait for categories to load
+  const navigation = screen.getByRole('navigation')
+  const categoryLink = await within(navigation).findByText('Fruta y verdura')
+  
+  // Click the category link
+  await user.click(categoryLink)
+  
+  // Should navigate to category page
+  const categoryTitle = await screen.findByRole('heading', { name: 'Fruta y verdura' })
+  expect(categoryTitle).toBeInTheDocument()
+})
+```
+
+## MSW: Mock Service Worker
+
+The workshop uses MSW to mock API responses. This lets you test API integration without a real backend.
+
+### How MSW Works
+
+1. MSW intercepts fetch requests
+2. Matches them against defined handlers
+3. Returns mock responses
+4. Your code doesn't know the difference!
+
+### MSW Setup
+
+The setup is already done for you:
+
+```tsx title="setupTests.ts"
+import '@testing-library/jest-dom/vitest'
+import { server } from './src/mocks/server'
+
+// Start MSW server before all tests
+beforeAll(() => server.listen())
+
+// Reset handlers after each test
+afterEach(() => server.resetHandlers())
+
+// Clean up after all tests
+afterAll(() => server.close())
+
+// Reset navigation to home before each test
+beforeEach(() => {
+  window.history.replaceState({}, '', '/')
+})
+```
+
+### Handlers Structure
+
+You'll add handlers as you implement iterations:
+
+```tsx title="src/mocks/handlers.ts"
+import { http, HttpResponse } from 'msw'
+import categoriesFixtures from './categories-fixtures.json'
+import productsFixtures from './products-fixtures.json'
+
+export const handlers = [
+  // ✅ Iteration 1: Already provided
+  http.get('/categories', () => {
+    return HttpResponse.json(categoriesFixtures)
+  }),
+  
+  // 📝 Iteration 2: You'll add this
+  http.get('/products', () => {
+    return HttpResponse.json(productsFixtures)
+  }),
+  
+  // 📝 Iteration 3: You'll add these
+  http.get('/categories/:slug', ({ params }) => {
+    const category = categoriesFixtures.find(c => c.slug === params.slug)
+    
+    if (!category) {
+      return new HttpResponse(null, { status: 404 })
+    }
+    
+    return HttpResponse.json(category)
+  }),
+  
+  http.get('/categories/:slug/products', ({ params }) => {
+    const category = categoriesFixtures.find(c => c.slug === params.slug)
+    
+    if (!category) {
+      return new HttpResponse(null, { status: 404 })
+    }
+    
+    const products = productsFixtures.filter(p => p.categoryId === category.id)
+    return HttpResponse.json(products)
+  }),
+]
+```
+
+### Fixture Data
+
+MSW handlers use JSON fixtures:
+
+```json title="src/mocks/categories-fixtures.json"
+[
+  {
+    "id": 1,
+    "displayName": "Fruta y verdura",
+    "slug": "fruta-y-verdura"
+  },
+  {
+    "id": 7,
+    "displayName": "Cereales",
+    "slug": "cereales"
+  },
+  {
+    "id": 15,
+    "displayName": "Aperitivos",
+    "slug": "aperitivos"
+  }
+]
+```
+
+```json title="src/mocks/products-fixtures.json (excerpt)"
+[
+  {
+    "id": 22910,
+    "displayName": "Aceitunas verdes rellenas de anchoa Hacendado",
+    "image": "/images/aceitunas-manzanilla-rellenas-anchoa-hacendado-pack-3-22910.jpg",
+    "price": 3,
+    "categoryId": 15,
+    "description": "Aceitunas verdes rellenas con anchoas de calidad. Perfectas para el aperitivo."
+  },
+  {
+    "id": 3819,
+    "displayName": "Plátano de Canarias IGP",
+    "image": "/images/platano-canarias-igp-pieza-3819.jpg",
+    "price": 0.37,
+    "categoryId": 1,
+    "description": "Plátano de Canarias con Indicación Geográfica Protegida. Dulce y aromático."
+  }
+]
+```
+
+<Tip>
+The fixtures contain 24 products total: 8 products per category across 3 categories. Use this in your test assertions.
+</Tip>
+
+## Type Definitions
+
+Add these TypeScript interfaces as you need them:
+
+```tsx
+interface Category {
+  id: number
+  displayName: string
+  slug: string
+}
+
+interface Product {
+  id: number
+  displayName: string
+  image: string
+  price: number
+  categoryId: number
+  description?: string  // Optional - not all products have descriptions
+}
+```
+
+## Best Practices
+
+<Accordion title="Use semantic HTML roles">
+Prefer querying by role over test IDs or CSS classes:
+
+```tsx
+// ✅ Good: Tests accessibility
+const nav = screen.getByRole('navigation')
+const button = screen.getByRole('button', { name: 'Close' })
+
+// ❌ Bad: Brittle, doesn't test accessibility
+const nav = screen.getByClassName('navigation')
+const button = screen.getByTestId('close-button')
+```
+</Accordion>
+
+<Accordion title="Wait for async operations">
+Use `findBy` for elements that appear after data fetching:
+
+```tsx
+// ✅ Good: Waits for products to load
+const products = await screen.findAllByRole('article')
+
+// ❌ Bad: Might fail if products aren't loaded yet
+const products = screen.getAllByRole('article')
+```
+</Accordion>
+
+<Accordion title="Use within() for scoped queries">
+Avoid ambiguity by scoping queries to specific containers:
+
+```tsx
+// ✅ Good: Only searches within navigation
+const nav = screen.getByRole('navigation')
+const items = within(nav).getAllByRole('listitem')
+
+// ❌ Bad: Might find items from other lists
+const items = screen.getAllByRole('listitem')
+```
+</Accordion>
+
+<Accordion title="Test user behavior, not implementation">
+Test what users see and do, not internal state:
+
+```tsx
+// ✅ Good: Tests observable behavior
+it('should close dialog when clicking close button', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Open dialog
+  const product = await screen.findByText('Plátano')
+  await user.click(product)
+  
+  // Close dialog
+  const closeButton = screen.getByRole('button', { name: /close/i })
+  await user.click(closeButton)
+  
+  // Verify it's closed
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+// ❌ Bad: Tests implementation details
+it('should set selectedProduct to null', () => {
+  // This tests internal state, not user-visible behavior
+})
+```
+</Accordion>
+
+## Quick Reference
+
+### Import Checklist
+
+```tsx
+// Always needed
+import { screen, render } from '@testing-library/react'
+import { App } from 'app'
+
+// Add when you need scoped queries
+import { within } from '@testing-library/react'
+
+// Add when you need to simulate user actions
+import { userEvent } from '@testing-library/user-event'
+```
+
+### Query Patterns
+
+```tsx
+// Single element (throws if not found)
+screen.getByRole('heading')
+
+// Multiple elements
+screen.getAllByRole('listitem')
+
+// Async: wait for element
+await screen.findByRole('dialog')
+
+// Returns null if not found (for negative assertions)
+screen.queryByRole('dialog')
+
+// Scoped query
+const nav = screen.getByRole('navigation')
+within(nav).getByText('Fruta y verdura')
+```
+
+### User Interaction Pattern
+
+```tsx
+const user = userEvent.setup()
+await user.click(element)
+await user.type(input, 'text')
+await user.keyboard('{Escape}')
+```
+
+## Next Steps
+
+Now that you understand the test structure:
+
+1. Review the [TDD Methodology](/tdd-methodology) for the Red-Green-Refactor cycle
+2. Follow the [How to Work](/how-to-work) guide to start implementing tests
+3. Open `Home.test.tsx` and convert your first `it.todo()` to a real test!

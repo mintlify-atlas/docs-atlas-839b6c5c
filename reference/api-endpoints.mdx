@@ -1,0 +1,253 @@
+---
+title: API Endpoints
+description: Mock API endpoints available through MSW for development and testing
+---
+
+All API endpoints are mocked using [Mock Service Worker (MSW)](https://mswjs.io/). There is no real backend server. MSW intercepts HTTP requests at the network level and returns fixture data.
+
+## Pre-Implemented Endpoints
+
+These endpoints are already configured in `src/mocks/handlers.ts` and work out of the box.
+
+### GET /categories
+
+Returns the complete list of product categories.
+
+<ParamField path="Method" type="GET">
+  No parameters required
+</ParamField>
+
+<ResponseField name="Response" type="Category[]">
+  Array of all available categories
+  
+  ```json
+  [
+    {
+      "id": 1,
+      "displayName": "Fruta y verdura",
+      "slug": "fruta-y-verdura"
+    },
+    {
+      "id": 7,
+      "displayName": "Cereales",
+      "slug": "cereales"
+    },
+    {
+      "id": 15,
+      "displayName": "Aperitivos",
+      "slug": "aperitivos"
+    }
+  ]
+  ```
+</ResponseField>
+
+<ResponseField name="Status Codes">
+  - `200 OK` - Always returns successfully with fixture data
+</ResponseField>
+
+**Implementation:**
+
+```typescript src/mocks/handlers.ts
+http.get('/categories', () => {
+  return HttpResponse.json(categoriesFixtures)
+})
+```
+
+## Endpoints to Implement
+
+These endpoints are commented out in `src/mocks/handlers.ts`. You'll implement them during the workshop iterations.
+
+### GET /products
+
+**Iteration 2** - Returns all products across all categories.
+
+<ParamField path="Method" type="GET">
+  No parameters required
+</ParamField>
+
+<ResponseField name="Response" type="Product[]">
+  Array of all 24 products from `products-fixtures.json`
+  
+  ```json
+  [
+    {
+      "id": 22910,
+      "displayName": "Aceitunas verdes rellenas de anchoa Hacendado",
+      "image": "/images/aceitunas-manzanilla-rellenas-anchoa-hacendado-pack-3-22910.jpg",
+      "price": 3,
+      "categoryId": 15,
+      "description": "Aceitunas verdes rellenas con anchoas de calidad. Perfectas para el aperitivo."
+    },
+    // ... 23 more products
+  ]
+  ```
+</ResponseField>
+
+<ResponseField name="Status Codes">
+  - `200 OK` - Returns all products
+</ResponseField>
+
+**Example Implementation:**
+
+```typescript
+http.get('/products', () => {
+  return HttpResponse.json(productsFixtures)
+})
+```
+
+### GET /categories/:slug
+
+**Iteration 3** - Returns a single category by its slug, or 404 if not found.
+
+<ParamField path="slug" type="string" required>
+  URL parameter - the category slug (e.g., `fruta-y-verdura`, `cereales`, `aperitivos`)
+</ParamField>
+
+<ResponseField name="Response" type="Category">
+  Single category object matching the slug
+  
+  ```json
+  {
+    "id": 1,
+    "displayName": "Fruta y verdura",
+    "slug": "fruta-y-verdura"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="Status Codes">
+  - `200 OK` - Category found
+  - `404 Not Found` - Category slug doesn't exist
+</ResponseField>
+
+**Example Implementation:**
+
+```typescript
+http.get('/categories/:slug', ({ params }) => {
+  const { slug } = params
+  const category = categoriesFixtures.find((c) => c.slug === slug)
+  
+  if (!category) {
+    return new HttpResponse(null, { status: 404 })
+  }
+  
+  return HttpResponse.json(category)
+})
+```
+
+### GET /categories/:slug/products
+
+**Iteration 3** - Returns all products belonging to a specific category, or 404 if category doesn't exist.
+
+<ParamField path="slug" type="string" required>
+  URL parameter - the category slug to filter products by
+</ParamField>
+
+<ResponseField name="Response" type="Product[]">
+  Array of products filtered by category (8 products per category in fixtures)
+  
+  ```json
+  [
+    {
+      "id": 3819,
+      "displayName": "Plátano de Canarias IGP",
+      "image": "/images/platano-canarias-igp-pieza-3819.jpg",
+      "price": 0.37,
+      "categoryId": 1,
+      "description": "Plátano de Canarias con Indicación Geográfica Protegida. Dulce y aromático."
+    },
+    // ... 7 more products from the same category
+  ]
+  ```
+</ResponseField>
+
+<ResponseField name="Status Codes">
+  - `200 OK` - Category exists (even if it has no products)
+  - `404 Not Found` - Category slug doesn't exist
+</ResponseField>
+
+**Example Implementation:**
+
+```typescript
+http.get('/categories/:slug/products', ({ params }) => {
+  const { slug } = params
+  const category = categoriesFixtures.find((c) => c.slug === slug)
+  
+  if (!category) {
+    return new HttpResponse(null, { status: 404 })
+  }
+  
+  const products = productsFixtures.filter(
+    (p) => p.categoryId === category.id
+  )
+  
+  return HttpResponse.json(products)
+})
+```
+
+## Fixture Data
+
+<Accordion title="Categories Fixture (3 categories)">
+  ```json src/mocks/categories-fixtures.json
+  [
+    {
+      "id": 1,
+      "displayName": "Fruta y verdura",
+      "slug": "fruta-y-verdura"
+    },
+    {
+      "id": 7,
+      "displayName": "Cereales",
+      "slug": "cereales"
+    },
+    {
+      "id": 15,
+      "displayName": "Aperitivos",
+      "slug": "aperitivos"
+    }
+  ]
+  ```
+</Accordion>
+
+<Accordion title="Products Fixture (24 products total)">
+  The `products-fixtures.json` file contains 24 products distributed across the 3 categories:
+  
+  - **Category 1** (Fruta y verdura): 8 products (IDs: 3819, 3824, 3313, 3028, 3119, 3236, 3820, 3830)
+  - **Category 7** (Cereales): 8 products (IDs: 9264, 9377, 22966, 9210, 35987, 86368, 9355, 9350)
+  - **Category 15** (Aperitivos): 8 products (IDs: 22910, 33053, 33168, 52734, 33235, 73331, 29540, 33136)
+  
+  Each product includes:
+  - Unique ID
+  - Display name
+  - Image path
+  - Price in euros
+  - Category ID
+  - Optional description
+</Accordion>
+
+## How MSW Works
+
+1. **Service Worker Registration**: MSW installs a service worker in the browser that intercepts network requests
+2. **Request Matching**: When your app makes a `fetch()` request, MSW checks if it matches any defined handlers
+3. **Mock Response**: If matched, MSW returns the mocked response without hitting a real server
+4. **Network Tab**: Requests appear in browser DevTools Network tab as if they were real
+
+This approach allows you to:
+- Test components with realistic API interactions
+- Work offline without a backend
+- Switch between mock and real APIs easily
+- See network requests in DevTools for debugging
+
+## Handler Configuration
+
+All handlers are exported from `src/mocks/handlers.ts` and registered in:
+- **Browser**: `src/mocks/browser.ts` (for development with `npm start`)
+- **Tests**: `src/test/setup.ts` (automatically loaded by Vitest)
+
+The MSW worker files are stored in the `public/` directory as configured in `package.json`:
+
+```json
+"msw": {
+  "workerDirectory": ["public"]
+}
+```

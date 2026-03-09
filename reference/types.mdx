@@ -1,0 +1,176 @@
+---
+title: TypeScript Types
+description: Core TypeScript interfaces used throughout the application
+---
+
+The application uses two main TypeScript interfaces to model the domain: `Category` and `Product`.
+
+## Category
+
+Represents a product category in the store navigation and routing.
+
+```typescript src/types/index.ts
+export interface Category {
+  id: number
+  displayName: string
+  slug: string
+}
+```
+
+### Fields
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the category. Used to link products to categories via `categoryId`.
+</ResponseField>
+
+<ResponseField name="displayName" type="string" required>
+  Human-readable name shown in the UI. Example: "Fruta y verdura", "Cereales", "Aperitivos".
+</ResponseField>
+
+<ResponseField name="slug" type="string" required>
+  URL-friendly version of the category name. Used in routing paths like `/categories/fruta-y-verdura`.
+  
+  Should contain only lowercase letters, numbers, and hyphens.
+</ResponseField>
+
+### Example Data
+
+```json src/mocks/categories-fixtures.json
+[
+  {
+    "id": 1,
+    "displayName": "Fruta y verdura",
+    "slug": "fruta-y-verdura"
+  },
+  {
+    "id": 7,
+    "displayName": "Cereales",
+    "slug": "cereales"
+  },
+  {
+    "id": 15,
+    "displayName": "Aperitivos",
+    "slug": "aperitivos"
+  }
+]
+```
+
+## Product
+
+Represents a product available for purchase.
+
+```typescript src/types/index.ts
+export interface Product {
+  id: number
+  displayName: string
+  image: string
+  price: number
+  categoryId: number
+  description?: string
+}
+```
+
+### Fields
+
+<ResponseField name="id" type="number" required>
+  Unique identifier for the product. Example: `22910`, `33053`.
+</ResponseField>
+
+<ResponseField name="displayName" type="string" required>
+  Product name shown to users. Example: "Aceitunas verdes rellenas de anchoa Hacendado".
+</ResponseField>
+
+<ResponseField name="image" type="string" required>
+  Relative path to the product image. Example: `/images/aceitunas-manzanilla-rellenas-anchoa-hacendado-pack-3-22910.jpg`.
+  
+  Images are served from the public directory.
+</ResponseField>
+
+<ResponseField name="price" type="number" required>
+  Product price in euros as a decimal number. Example: `3.0`, `2.8`, `1.05`.
+  
+  Should be formatted with `Intl.NumberFormat` before displaying to users:
+  
+  ```typescript
+  new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(price)
+  ```
+</ResponseField>
+
+<ResponseField name="categoryId" type="number" required>
+  Foreign key reference to the product's category. Links to `Category.id`.
+  
+  Example: A product with `categoryId: 15` belongs to the "Aperitivos" category.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Optional detailed description of the product. Example: "Aceitunas verdes rellenas con anchoas de calidad. Perfectas para el aperitivo."
+  
+  Displayed in list view and product detail modal, but hidden in card view.
+</ResponseField>
+
+### Example Data
+
+```json src/mocks/products-fixtures.json
+[
+  {
+    "id": 22910,
+    "displayName": "Aceitunas verdes rellenas de anchoa Hacendado",
+    "image": "/images/aceitunas-manzanilla-rellenas-anchoa-hacendado-pack-3-22910.jpg",
+    "price": 3,
+    "categoryId": 15,
+    "description": "Aceitunas verdes rellenas con anchoas de calidad. Perfectas para el aperitivo."
+  },
+  {
+    "id": 3819,
+    "displayName": "Plátano de Canarias IGP",
+    "image": "/images/platano-canarias-igp-pieza-3819.jpg",
+    "price": 0.37,
+    "categoryId": 1,
+    "description": "Plátano de Canarias con Indicación Geográfica Protegida. Dulce y aromático."
+  },
+  {
+    "id": 9264,
+    "displayName": "Cereales rellenos de leche Hacendado",
+    "image": "/images/cereales-rellenos-leche-hacendado-caja-9264.jpg",
+    "price": 2.4,
+    "categoryId": 7,
+    "description": "Cereales crujientes con relleno cremoso de leche. Desayuno delicioso."
+  }
+]
+```
+
+## Relationship Between Types
+
+Products are linked to categories through the `categoryId` field:
+
+```typescript
+interface Category {
+  id: number  // Primary key
+  // ...
+}
+
+interface Product {
+  categoryId: number  // Foreign key → Category.id
+  // ...
+}
+```
+
+To filter products by category:
+
+```typescript
+const categoryProducts = products.filter(
+  (product) => product.categoryId === category.id
+)
+```
+
+## Data Location
+
+All test data is stored in JSON fixture files:
+
+- **Categories**: `src/mocks/categories-fixtures.json` (3 categories)
+- **Products**: `src/mocks/products-fixtures.json` (24 products, 8 per category)
+
+These fixtures are used by MSW handlers to mock API responses during development and testing.

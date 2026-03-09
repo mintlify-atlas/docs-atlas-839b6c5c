@@ -1,0 +1,223 @@
+---
+title: "Iteration 1: Category Listing"
+description: "Fetch categories from the API and render them in the navigation bar"
+---
+
+## Overview
+
+In this first iteration, you'll implement the category listing feature. You'll fetch categories from a mocked API endpoint and display them in the navigation bar. This is your introduction to the TDD workflow: write a failing test, implement the minimum code to make it pass, then refactor.
+
+<img src="https://github.com/user-attachments/assets/5471c519-8f42-49eb-aa05-a43bf0f2351a" alt="Category listing screenshot" width="1230" height="1046" />
+
+## Learning Objectives
+
+- Practice the Red-Green-Refactor cycle
+- Fetch data from an API in React
+- Render dynamic lists from API data
+- Work with MSW (Mock Service Worker) handlers
+
+## What's Provided
+
+<Note>
+The MSW handler for `GET /categories` is already configured in `src/mocks/handlers.ts` and returns data from `categories-fixtures.json`.
+</Note>
+
+**Categories fixture data:**
+
+```json
+[
+  {
+    "id": 1,
+    "displayName": "Fruta y verdura",
+    "slug": "fruta-y-verdura"
+  },
+  {
+    "id": 7,
+    "displayName": "Cereales",
+    "slug": "cereales"
+  },
+  {
+    "id": 15,
+    "displayName": "Aperitivos",
+    "slug": "aperitivos"
+  }
+]
+```
+
+**Type definition (src/types/index.ts):**
+
+```typescript
+interface Category {
+  id: number
+  displayName: string
+  slug: string
+}
+```
+
+## Test Cases to Implement
+
+Open `src/pages/home/__tests__/Home.test.tsx` and implement this test:
+
+```typescript
+describe('Iteración 1 - Listado de categorías', () => {
+  it.todo('should render the list of categories in the navigation')
+})
+```
+
+<Steps>
+
+### Change the test from todo to active
+
+Replace `it.todo` with `it` and add the test implementation:
+
+```typescript
+it('should render the list of categories in the navigation', async () => {
+  render(<App />)
+  
+  // Wait for categories to load
+  const categoryItems = await screen.findAllByRole('listitem')
+  
+  // Verify all categories are rendered
+  expect(categoryItems).toHaveLength(3)
+  expect(screen.getByText('Fruta y verdura')).toBeInTheDocument()
+  expect(screen.getByText('Cereales')).toBeInTheDocument()
+  expect(screen.getByText('Aperitivos')).toBeInTheDocument()
+})
+```
+
+### Run the test and see it fail (RED)
+
+The test will fail because the categories aren't being fetched or rendered yet.
+
+```bash
+npm test
+```
+
+### Implement the minimum code to make it pass (GREEN)
+
+In your navigation component, fetch and display the categories:
+
+```typescript
+import { useEffect, useState } from 'react'
+import type { Category } from '../types'
+
+const Navigation = () => {
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    fetch('/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data))
+  }, [])
+
+  return (
+    <nav className="navigation">
+      <ul className="navigation__list">
+        {categories.map(category => (
+          <li key={category.id} className="navigation__list-item">
+            {category.displayName}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+```
+
+### Run the test again - it should pass (GREEN)
+
+```bash
+npm test
+```
+
+### Refactor if needed
+
+Consider extracting the fetch logic to a custom hook or moving it to a separate function. The important thing is that tests continue passing after any refactor.
+
+</Steps>
+
+## Expected HTML Structure
+
+Your navigation should render the following HTML structure:
+
+```html
+<ul class="navigation__list">
+  <li class="navigation__list-item">Fruta y verdura</li>
+  <li class="navigation__list-item">Cereales</li>
+  <li class="navigation__list-item">Aperitivos</li>
+</ul>
+```
+
+## Implementation Hints
+
+<Accordion title="How do I fetch data in React?">
+
+Use the `useEffect` hook to fetch data when the component mounts:
+
+```typescript
+useEffect(() => {
+  fetch('/categories')
+    .then(res => res.json())
+    .then(data => setCategories(data))
+}, [])
+```
+
+The empty dependency array `[]` ensures the fetch only happens once on mount.
+
+</Accordion>
+
+<Accordion title="How do I render a list in React?">
+
+Use the `map` function to transform an array of data into React elements:
+
+```typescript
+{categories.map(category => (
+  <li key={category.id} className="navigation__list-item">
+    {category.displayName}
+  </li>
+))}
+```
+
+Always provide a unique `key` prop when rendering lists.
+
+</Accordion>
+
+<Accordion title="Why use async/await in tests?">
+
+MSW handlers are asynchronous. Use `findAllByRole` or `findByText` (instead of `getBy*`) to wait for elements to appear after the API call completes:
+
+```typescript
+const categoryItems = await screen.findAllByRole('listitem')
+```
+
+</Accordion>
+
+## Common Issues
+
+<Tip>
+**Issue:** Test times out or categories don't appear
+
+**Solution:** Make sure you're using `findAllByRole` (async) instead of `getAllByRole` (sync). The categories need time to load from the mocked API.
+</Tip>
+
+<Tip>
+**Issue:** "Cannot read property 'map' of undefined"
+
+**Solution:** Initialize your state with an empty array: `useState<Category[]>([])`
+</Tip>
+
+## Verification
+
+Run the app and verify:
+
+```bash
+npm start
+```
+
+- Navigate to `http://localhost:5173`
+- You should see three categories in the navigation
+- The test should pass when running `npm test`
+
+## Next Steps
+
+Once you've successfully implemented iteration 1, move on to [Iteration 2: Product Listing](/iterations/iteration-2) where you'll display products with formatted prices.

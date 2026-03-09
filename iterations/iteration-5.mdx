@@ -1,0 +1,620 @@
+---
+title: "Iteration 5: Product Modal"
+description: "Implement a modal dialog using the native HTML dialog element to display product details"
+---
+
+## Overview
+
+In this final iteration, you'll implement a product detail modal using the native HTML `<dialog>` element. When users click on a product card, a modal will open showing the product's full details including the description.
+
+<img src="https://github.com/user-attachments/assets/66119000-3828-4f99-9d40-7477cf8809c5" alt="Product modal screenshot" width="1183" height="1008" />
+
+## Learning Objectives
+
+- Work with the native HTML dialog element
+- Manage modal state with React
+- Handle click events on product cards
+- Implement modal close functionality (button, ESC key, backdrop click)
+- Use event listeners in React with useEffect
+
+## What's Provided
+
+<Note>
+**ProductDetail Component:** A static component exists at `src/components/product-detail/ProductDetail.tsx`. Like `ProductCard` in Iteration 2, you need to make it dynamic by accepting props.
+
+```typescript
+// Current implementation (static)
+export const ProductDetail = () => {
+  // Hardcoded product data
+}
+```
+</Note>
+
+## Test Cases to Implement
+
+Open `src/pages/home/__tests__/Home.test.tsx` and implement these tests:
+
+```typescript
+describe('Iteración 5 - Modal de producto', () => {
+  it.todo('should open a dialog with product details when clicking a product')
+  it.todo('should close the dialog when clicking close button')
+  it.todo('should close the dialog when clicking outside the modal [OPTIONAL]')
+  it.todo('should close the dialog when pressing ESC key [OPTIONAL]')
+})
+```
+
+<Steps>
+
+### Write the tests
+
+```typescript
+import { within } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+
+it('should open a dialog with product details when clicking a product', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Wait for products to load
+  const productCard = await screen.findByRole('article', { name: /aguacate/i })
+  
+  // Click the product
+  await user.click(productCard)
+  
+  // Dialog should be open
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toBeInTheDocument()
+  
+  // Verify product details are shown
+  const modalTitle = within(dialog).getByRole('heading', { name: 'Aguacate' })
+  expect(modalTitle).toBeInTheDocument()
+  
+  const description = within(dialog).getByText(/cremoso y nutritivo/i)
+  expect(description).toBeInTheDocument()
+})
+
+it('should close the dialog when clicking close button', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Open modal
+  const productCard = await screen.findByRole('article', { name: /aguacate/i })
+  await user.click(productCard)
+  
+  // Verify dialog is open
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  
+  // Click close button
+  const closeButton = screen.getByRole('button', { name: /cerrar/i })
+  await user.click(closeButton)
+  
+  // Dialog should be closed
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+```
+
+### Run tests - they should fail (RED)
+
+```bash
+npm test
+```
+
+### Make ProductCard clickable
+
+Update `src/components/product-card/ProductCard.tsx`:
+
+```typescript
+interface ProductCardProps {
+  product: Product
+  onClick?: () => void  // Add onClick handler
+}
+
+export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+  const { viewMode } = useViewMode()
+  
+  const formattedPrice = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(product.price)
+
+  return (
+    <article 
+      className={`product-card product-card--${viewMode}`}
+      onClick={onClick}
+      role="article"
+      aria-label={product.displayName}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
+      {/* ... rest of component ... */}
+    </article>
+  )
+}
+```
+
+### Make ProductDetail dynamic
+
+Update `src/components/product-detail/ProductDetail.tsx`:
+
+```typescript
+import type { Product } from '../../types'
+import './ProductDetail.css'
+
+interface ProductDetailProps {
+  product: Product
+  onClose: () => void
+}
+
+export const ProductDetail = ({ product, onClose }: ProductDetailProps) => {
+  const formattedPrice = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(product.price)
+
+  return (
+    <>
+      <div className="product-detail__overlay" onClick={onClose} />
+      <dialog open className="product-detail">
+        <div className="product-detail__content">
+          <button 
+            className="product-detail__close" 
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+          <img
+            src={product.image}
+            alt={product.displayName}
+            className="product-detail__image"
+          />
+          <h2 className="product-detail__name">{product.displayName}</h2>
+          <p className="product-detail__price">{formattedPrice}</p>
+          <p className="product-detail__description">
+            {product.description}
+          </p>
+        </div>
+      </dialog>
+    </>
+  )
+}
+```
+
+### Add modal state to Home component
+
+```typescript
+import { useState } from 'react'
+import { ProductDetail } from '../../components/product-detail/ProductDetail'
+import type { Product } from '../../types'
+
+const Home = () => {
+  const { viewMode } = useViewMode()
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  
+  // ... fetch logic ...
+  
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product)
+  }
+  
+  const handleCloseModal = () => {
+    setSelectedProduct(null)
+  }
+  
+  const containerClass = viewMode === 'card' 
+    ? 'home__products-grid' 
+    : 'home__products-list'
+  
+  return (
+    <>
+      <section className={containerClass}>
+        {products.map(product => (
+          <ProductCard 
+            key={product.id} 
+            product={product}
+            onClick={() => handleProductClick(product)}
+          />
+        ))}
+      </section>
+      
+      {selectedProduct && (
+        <ProductDetail 
+          product={selectedProduct} 
+          onClose={handleCloseModal}
+        />
+      )}
+    </>
+  )
+}
+```
+
+### Verify tests pass (GREEN)
+
+```bash
+npm test
+```
+
+### Optional: Add keyboard support
+
+Add ESC key handling to ProductDetail:
+
+```typescript
+import { useEffect } from 'react'
+
+export const ProductDetail = ({ product, onClose }: ProductDetailProps) => {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+  
+  // ... rest of component ...
+}
+```
+
+Test it:
+
+```typescript
+it('should close the dialog when pressing ESC key', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Open modal
+  const productCard = await screen.findByRole('article', { name: /aguacate/i })
+  await user.click(productCard)
+  
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  
+  // Press ESC
+  await user.keyboard('{Escape}')
+  
+  // Dialog should be closed
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+```
+
+</Steps>
+
+## Critical: Conditional Rendering Pattern
+
+<Note>
+**IMPORTANT:** The modal should only render when a product is selected. Never use an `isOpen` prop pattern.
+
+**Correct:**
+```typescript
+{selectedProduct && (
+  <ProductDetail product={selectedProduct} onClose={handleCloseModal} />
+)}
+```
+
+**Incorrect:**
+```typescript
+{/* ❌ DON'T DO THIS */}
+<ProductDetail 
+  product={selectedProduct} 
+  isOpen={!!selectedProduct}
+  onClose={handleCloseModal}
+/>
+```
+
+Why? Conditional rendering is simpler, more React-like, and avoids rendering unnecessary DOM nodes.
+</Note>
+
+## The Native Dialog Element
+
+<Tip>
+The `<dialog>` element is a native HTML element with built-in modal functionality:
+
+```html
+<dialog open>
+  <!-- Modal content -->
+</dialog>
+```
+
+**Benefits:**
+- Semantic HTML
+- Automatic focus management
+- Backdrop styling with `::backdrop` pseudo-element
+- Accessibility features built-in
+
+**The `open` attribute:** Controls whether the dialog is visible.
+</Tip>
+
+## Modal Close Mechanisms
+
+<Tabs>
+  <Tab title="Close Button">
+
+The most common way to close a modal:
+
+```typescript
+<button 
+  className="product-detail__close" 
+  onClick={onClose}
+  aria-label="Cerrar"
+>
+  ×
+</button>
+```
+
+Test:
+```typescript
+const closeButton = screen.getByRole('button', { name: /cerrar/i })
+await user.click(closeButton)
+expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+```
+
+  </Tab>
+  <Tab title="Backdrop Click">
+
+Close when clicking outside the modal content:
+
+```typescript
+<div 
+  className="product-detail__overlay" 
+  onClick={onClose}
+/>
+```
+
+The overlay covers the entire viewport behind the dialog.
+
+Test:
+```typescript
+const overlay = screen.getByClassName('product-detail__overlay')
+await user.click(overlay)
+expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+```
+
+  </Tab>
+  <Tab title="ESC Key">
+
+Close when pressing the ESC key:
+
+```typescript
+useEffect(() => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose()
+    }
+  }
+  
+  window.addEventListener('keydown', handleKeyDown)
+  return () => window.removeEventListener('keydown', handleKeyDown)
+}, [onClose])
+```
+
+Test:
+```typescript
+await user.keyboard('{Escape}')
+expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+```
+
+  </Tab>
+</Tabs>
+
+## Implementation Hints
+
+<Accordion title="How do I make a component clickable?">
+
+Add an `onClick` handler to the root element:
+
+```typescript
+interface ProductCardProps {
+  product: Product
+  onClick?: () => void
+}
+
+<article onClick={onClick}>
+  {/* ... */}
+</article>
+```
+
+Make it clear to users by adding a cursor style:
+```typescript
+style={{ cursor: onClick ? 'pointer' : 'default' }}
+```
+
+</Accordion>
+
+<Accordion title="How do I manage modal state?">
+
+Store the selected product in state:
+
+```typescript
+const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+
+// Open modal
+const handleProductClick = (product: Product) => {
+  setSelectedProduct(product)
+}
+
+// Close modal
+const handleCloseModal = () => {
+  setSelectedProduct(null)
+}
+```
+
+When `selectedProduct` is `null`, the modal isn't rendered.
+
+</Accordion>
+
+<Accordion title="How do I add keyboard event listeners?">
+
+Use `useEffect` to add and clean up event listeners:
+
+```typescript
+useEffect(() => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose()
+    }
+  }
+  
+  window.addEventListener('keydown', handleKeyDown)
+  
+  // Cleanup function runs when component unmounts
+  return () => window.removeEventListener('keydown', handleKeyDown)
+}, [onClose])
+```
+
+Always include `onClose` in the dependency array.
+
+</Accordion>
+
+<Accordion title="Why include onClose in the dependency array?">
+
+ESlint's `exhaustive-deps` rule requires all values used inside `useEffect` to be listed in the dependency array. This ensures:
+
+1. The effect re-runs if `onClose` changes
+2. The cleanup function removes the correct listener
+3. No stale closures
+
+```typescript
+useEffect(() => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose() // Uses onClose
+    }
+  }
+  window.addEventListener('keydown', handleKeyDown)
+  return () => window.removeEventListener('keydown', handleKeyDown)
+}, [onClose]) // Must include onClose
+```
+
+</Accordion>
+
+## Common Issues
+
+<Tip>
+**Issue:** "Cannot read property 'displayName' of null"
+
+**Solution:** Use conditional rendering:
+
+```typescript
+{selectedProduct && (
+  <ProductDetail product={selectedProduct} onClose={handleCloseModal} />
+)}
+```
+
+The modal component only renders when `selectedProduct` is not null.
+</Tip>
+
+<Tip>
+**Issue:** ESC key closes modal but warning appears
+
+**Solution:** Make sure to include `onClose` in the `useEffect` dependency array:
+
+```typescript
+useEffect(() => {
+  // ...
+}, [onClose]) // Don't forget!
+```
+</Tip>
+
+<Tip>
+**Issue:** Clicking product card scrolls instead of opening modal
+
+**Solution:** Make sure you're passing the `onClick` prop to the `<article>` element, not to a child element.
+</Tip>
+
+<Tip>
+**Issue:** Modal appears but overlay doesn't cover whole screen
+
+**Solution:** The overlay needs to be positioned fixed with full viewport dimensions. Check the CSS:
+
+```css
+.product-detail__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+```
+</Tip>
+
+## CategoryDetail Modal Support
+
+Don't forget to implement the same modal functionality in the `CategoryDetail` page! The tests are in `src/pages/category-detail/__tests__/CategoryDetail.test.tsx`:
+
+```typescript
+describe('Iteración 5 - Modal de producto desde categoría', () => {
+  it.todo('should open a dialog with product details when clicking a product from category')
+  it.todo('should close the dialog when clicking close button from category')
+  // ...
+})
+```
+
+The implementation is identical to the Home page.
+
+## Verification
+
+Run the app and verify:
+
+```bash
+npm start
+```
+
+- Click on any product card
+- Modal should appear with product details
+- Modal should show product image, name, price, and description
+- Click the X button to close the modal
+- (Optional) Click outside the modal to close it
+- (Optional) Press ESC to close the modal
+- Verify modal works on both Home and CategoryDetail pages
+
+## Congratulations!
+
+You've completed all 5 iterations of the TDD Workshop! You've built a complete e-commerce product catalog with:
+
+<Steps>
+  <Step title="Category Navigation">
+    Fetching and displaying categories from an API
+  </Step>
+  <Step title="Product Listing">
+    Dynamic product cards with formatted prices
+  </Step>
+  <Step title="Routing">
+    React Router with category filtering
+  </Step>
+  <Step title="View Modes">
+    Global state management with Context API
+  </Step>
+  <Step title="Product Modal">
+    Native dialog element with multiple close mechanisms
+  </Step>
+</Steps>
+
+## Key Takeaways
+
+Throughout this workshop, you've learned:
+
+- **TDD Workflow:** Red → Green → Refactor cycle
+- **Testing:** Writing tests first, testing async behavior, user interactions
+- **React Patterns:** Hooks, Context API, conditional rendering, event handling
+- **API Integration:** MSW for mocking, dynamic route parameters, error handling
+- **TypeScript:** Type safety for props, state, and API responses
+- **Accessibility:** Semantic HTML, ARIA labels, keyboard navigation
+
+## Next Steps
+
+To continue improving the application:
+
+- Add loading states and spinners
+- Implement error boundaries
+- Add animations and transitions
+- Create a shopping cart feature
+- Add product search functionality
+- Implement filters (price range, availability)
+- Add unit tests for utility functions
+- Improve accessibility with focus management
+- Add end-to-end tests with Playwright
+
+Keep practicing TDD—it's a skill that improves with repetition!

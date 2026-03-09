@@ -1,0 +1,463 @@
+---
+title: "Iteration 3: Navigation and Routing"
+description: "Implement React Router to navigate between categories and display category-specific products"
+---
+
+## Overview
+
+In this iteration, you'll implement client-side routing using React Router. Users will be able to click on categories in the navigation to view products filtered by category. You'll also implement optional features like active link highlighting and 404 handling.
+
+<img src="https://github.com/user-attachments/assets/65e3eaa4-1b6f-4504-bd8c-36b553891602" alt="Category detail page screenshot" width="1244" height="1046" />
+
+## Learning Objectives
+
+- Configure React Router for single-page navigation
+- Use URL parameters to load dynamic data
+- Implement MSW handlers with dynamic route parameters
+- Handle 404 errors gracefully
+- Work with NavLink for active route styling
+
+## What's Provided
+
+<Note>
+**Routing structure:** The files `RootLayout`, `AppRoutes`, and route constants are in `src/pages/routes/`.
+
+**Category detail page:** An empty component exists at `src/pages/category-detail/CategoryDetail.tsx` ready to be implemented.
+</Note>
+
+## Test Cases to Implement
+
+Open `src/pages/category-detail/__tests__/CategoryDetail.test.tsx` and implement these tests:
+
+```typescript
+describe('Iteración 3 - Navegación y routing', () => {
+  it.todo('should navigate to the category page and display the category title')
+  it.todo('should show the category products')
+  it.todo('should navigate to home when clicking the logo [OPTIONAL]')
+  it.todo('should highlight the active category in the navigation [OPTIONAL]')
+  it.todo('should display a not found message when the category does not exist [OPTIONAL]')
+})
+```
+
+<Steps>
+
+### Write the first test: Navigate to category page
+
+```typescript
+it('should navigate to the category page and display the category title', async () => {
+  // Navigate directly to a category page
+  window.history.pushState({}, '', '/categories/fruta-y-verdura')
+  render(<App />)
+  
+  // Wait for category name to appear
+  const categoryTitle = await screen.findByRole('heading', { name: 'Fruta y verdura' })
+  expect(categoryTitle).toBeInTheDocument()
+})
+```
+
+### Write the second test: Show category products
+
+```typescript
+it('should show the category products', async () => {
+  window.history.pushState({}, '', '/categories/fruta-y-verdura')
+  render(<App />)
+  
+  // Wait for products to load
+  const aguacate = await screen.findByText('Aguacate')
+  expect(aguacate).toBeInTheDocument()
+  
+  // Verify we only see products from this category
+  const platano = screen.getByText('Plátano de Canarias IGP')
+  expect(platano).toBeInTheDocument()
+  
+  // Product from different category should not be visible
+  expect(screen.queryByText('Aceitunas verdes rellenas de anchoa Hacendado')).not.toBeInTheDocument()
+})
+```
+
+### Run tests - they should fail (RED)
+
+```bash
+npm test
+```
+
+### Create MSW handlers for category endpoints
+
+In `src/mocks/handlers.ts`, add handlers for categories and category products:
+
+```typescript
+import categoriesFixtures from './categories-fixtures.json'
+import productsFixtures from './products-fixtures.json'
+
+export const handlers = [
+  http.get('/categories', () => {
+    return HttpResponse.json(categoriesFixtures)
+  }),
+  
+  http.get('/products', () => {
+    return HttpResponse.json(productsFixtures)
+  }),
+  
+  // Get category by slug
+  http.get('/categories/:slug', ({ params }) => {
+    const { slug } = params
+    const category = categoriesFixtures.find(c => c.slug === slug)
+    
+    if (!category) {
+      return new HttpResponse(null, { status: 404 })
+    }
+    
+    return HttpResponse.json(category)
+  }),
+  
+  // Get products for a category
+  http.get('/categories/:slug/products', ({ params }) => {
+    const { slug } = params
+    const category = categoriesFixtures.find(c => c.slug === slug)
+    
+    if (!category) {
+      return new HttpResponse(null, { status: 404 })
+    }
+    
+    const categoryProducts = productsFixtures.filter(
+      p => p.categoryId === category.id
+    )
+    
+    return HttpResponse.json(categoryProducts)
+  }),
+]
+```
+
+### Implement the CategoryDetail component
+
+In `src/pages/category-detail/CategoryDetail.tsx`:
+
+```typescript
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { ProductCard } from '../../components/product-card/ProductCard'
+import type { Category, Product } from '../../types'
+import './CategoryDetail.css'
+
+const CategoryDetail = () => {
+  const { slug } = useParams<{ slug: string }>()
+  const [category, setCategory] = useState<Category | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    // Fetch category
+    fetch(`/categories/${slug}`)
+      .then(async response => {
+        if (!response.ok) {
+          setNotFound(true)
+          return null
+        }
+        return response.json()
+      })
+      .then(data => {
+        if (data) {
+          setCategory(data)
+        }
+      })
+
+    // Fetch products for category
+    fetch(`/categories/${slug}/products`)
+      .then(async response => {
+        if (!response.ok) {
+          return []
+        }
+        return response.json()
+      })
+      .then(data => setProducts(data))
+  }, [slug])
+
+  if (notFound) {
+    return (
+      <section className="category-detail">
+        <h1>Categoría no encontrada</h1>
+      </section>
+    )
+  }
+
+  if (!category) {
+    return null // Loading state
+  }
+
+  return (
+    <section className="category-detail">
+      <h1>{category.displayName}</h1>
+      <div className="category-detail__products-grid">
+        {products.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export { CategoryDetail }
+```
+
+### Add navigation links
+
+Update your Navigation component to link to category pages:
+
+```typescript
+import { Link } from 'react-router-dom'
+
+// Inside your map:
+{categories.map(category => (
+  <li key={category.id} className="navigation__list-item">
+    <Link to={`/categories/${category.slug}`}>
+      {category.displayName}
+    </Link>
+  </li>
+))}
+```
+
+### Verify tests pass (GREEN)
+
+```bash
+npm test
+```
+
+</Steps>
+
+## Handling URL Parameters
+
+<Note>
+React Router provides the `useParams` hook to access URL parameters:
+
+```typescript
+import { useParams } from 'react-router-dom'
+
+const { slug } = useParams<{ slug: string }>()
+// slug will be "fruta-y-verdura" for URL /categories/fruta-y-verdura
+```
+</Note>
+
+## Optional Features
+
+<Tabs>
+  <Tab title="Active Link Highlighting">
+
+Use `NavLink` instead of `Link` to automatically add classes to active links:
+
+```typescript
+import { NavLink } from 'react-router-dom'
+import classNames from 'classnames'
+
+<NavLink
+  to={`/categories/${category.slug}`}
+  className={({ isActive }) =>
+    classNames('navigation__link', {
+      'navigation__link--active': isActive,
+    })
+  }
+>
+  {category.displayName}
+</NavLink>
+```
+
+The `isActive` property is automatically `true` when the current URL matches the link's `to` prop.
+
+  </Tab>
+  <Tab title="Home Logo Navigation">
+
+Make the logo clickable to return to the home page:
+
+```typescript
+import { Link } from 'react-router-dom'
+
+<Link to="/" className="header__logo">
+  <img src="/logo.svg" alt="Home" />
+</Link>
+```
+
+Test it:
+
+```typescript
+it('should navigate to home when clicking the logo', async () => {
+  window.history.pushState({}, '', '/categories/cereales')
+  render(<App />)
+  
+  const logo = await screen.findByAltText('Home')
+  await userEvent.click(logo)
+  
+  const homeHeading = await screen.findByRole('heading', { name: 'Hello World!' })
+  expect(homeHeading).toBeInTheDocument()
+})
+```
+
+  </Tab>
+  <Tab title="404 Not Found">
+
+Handle non-existent categories gracefully:
+
+```typescript
+const [notFound, setNotFound] = useState(false)
+
+useEffect(() => {
+  fetch(`/categories/${slug}`)
+    .then(async response => {
+      if (!response.ok) {
+        setNotFound(true)
+        return null
+      }
+      return response.json()
+    })
+    .then(data => {
+      if (data) setCategory(data)
+    })
+}, [slug])
+
+if (notFound) {
+  return <h1>Categoría no encontrada</h1>
+}
+```
+
+Test it:
+
+```typescript
+it('should display a not found message when the category does not exist', async () => {
+  window.history.pushState({}, '', '/categories/invalid-category')
+  render(<App />)
+  
+  const notFoundMessage = await screen.findByText('Categoría no encontrada')
+  expect(notFoundMessage).toBeInTheDocument()
+})
+```
+
+  </Tab>
+</Tabs>
+
+## Implementation Hints
+
+<Accordion title="How do I link to a category?">
+
+Simple approach using string concatenation:
+
+```typescript
+to={`/categories/${category.slug}`}
+```
+
+Robust approach using `generatePath`:
+
+```typescript
+import { generatePath } from 'react-router-dom'
+import { PATHS } from '../routes'
+
+to={generatePath(PATHS.CATEGORY_DETAIL, { slug: category.slug })}
+```
+
+</Accordion>
+
+<Accordion title="Why check response.ok before parsing JSON?">
+
+If the response is a 404, calling `response.json()` will fail because there's no JSON body:
+
+```typescript
+const response = await fetch(`/categories/${slug}`)
+if (!response.ok) {
+  setNotFound(true)
+  return null
+}
+const data = await response.json()
+```
+
+Always check `response.ok` (true for status 200-299) before parsing.
+
+</Accordion>
+
+<Accordion title="How do I navigate to a specific URL in tests?">
+
+Use `window.history.pushState` before rendering:
+
+```typescript
+window.history.pushState({}, '', '/categories/fruta-y-verdura')
+render(<App />)
+```
+
+This simulates the user navigating directly to that URL.
+
+</Accordion>
+
+<Accordion title="How do I filter products by category?">
+
+In the MSW handler, find the category first, then filter products:
+
+```typescript
+http.get('/categories/:slug/products', ({ params }) => {
+  const { slug } = params
+  const category = categoriesFixtures.find(c => c.slug === slug)
+  
+  if (!category) {
+    return new HttpResponse(null, { status: 404 })
+  }
+  
+  const categoryProducts = productsFixtures.filter(
+    p => p.categoryId === category.id
+  )
+  
+  return HttpResponse.json(categoryProducts)
+})
+```
+
+</Accordion>
+
+## Common Issues
+
+<Tip>
+**Issue:** "Cannot read property 'displayName' of null"
+
+**Solution:** Add a loading state check before rendering:
+
+```typescript
+if (!category) return null
+```
+</Tip>
+
+<Tip>
+**Issue:** Test fails with "Invalid JSON" error on 404
+
+**Solution:** Check `response.ok` before calling `response.json()`:
+
+```typescript
+if (!response.ok) {
+  setNotFound(true)
+  return null
+}
+return response.json()
+```
+</Tip>
+
+<Tip>
+**Issue:** Products from all categories appear
+
+**Solution:** Make sure your MSW handler filters by `category.id`:
+
+```typescript
+productsFixtures.filter(p => p.categoryId === category.id)
+```
+</Tip>
+
+## Verification
+
+Run the app and verify:
+
+```bash
+npm start
+```
+
+- Click on "Fruta y verdura" in the navigation
+- URL should change to `/categories/fruta-y-verdura`
+- Page should show "Fruta y verdura" heading
+- Only 8 products from that category should appear
+- Clicking other categories should filter products accordingly
+- (Optional) Active category link should be highlighted
+- (Optional) Navigate to `/categories/invalid` to see 404 message
+
+## Next Steps
+
+Excellent! You now have a multi-page application with routing. Continue to [Iteration 4: Toggle Card/List View](/iterations/iteration-4) where you'll implement view switching with Context API.

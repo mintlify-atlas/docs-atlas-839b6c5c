@@ -1,97 +1,107 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "TDD Workshop - React"
+description: "Learn Test-Driven Development by building a Mercadona mini-app step by step"
 ---
 
-## Setting up
+## Welcome to the TDD Workshop
 
-Get your documentation site up and running in minutes.
+A hands-on workshop for learning Test-Driven Development by building a React application iteratively. You'll start with a simple "Hello World" app and add functionality iteration by iteration, always following the **Red → Green → Refactor** cycle.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<CardGroup cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Get Started"
+    icon="rocket"
+    href="/setup"
   >
-    Edit your docs locally and preview them in real time.
+    Set up your environment with GitHub Codespaces or locally
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="TDD Methodology"
+    icon="flask"
+    href="/tdd-methodology"
   >
-    Customize the design and colors of your site to match your brand.
+    Learn the Red-Green-Refactor cycle
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
+</CardGroup>
+
+## What You'll Build
+
+Build a fully functional Mercadona product catalog application with:
+
+<CardGroup cols={2}>
+  <Card
+    title="Category Navigation"
+    icon="list"
+    href="/iterations/iteration-1"
   >
-    Organize your docs to help users find what they need and succeed with your product.
+    Fetch and display product categories
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Product Listing"
+    icon="grid-2"
+    href="/iterations/iteration-2"
   >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+    Show products with formatted prices
   </Card>
   <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
+    title="Routing & Navigation"
+    icon="route"
+    href="/iterations/iteration-3"
   >
-    Add sample code to demonstrate how to use your product.
+    Navigate between categories with React Router
   </Card>
   <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
+    title="View Modes"
+    icon="table-cells"
+    href="/iterations/iteration-4"
   >
-    Display images and other media.
+    Toggle between card and list views
   </Card>
   <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
+    title="Product Details"
+    icon="window"
+    href="/iterations/iteration-5"
   >
-    Write once and reuse across your docs.
+    Show product details in a modal
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Key Features
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={3}>
+  <Card
+    title="5 Iterations"
+    icon="stairs"
+  >
+    Progressive complexity with pre-written tests
+  </Card>
+  <Card
+    title="Mock API"
+    icon="server"
+  >
+    MSW-powered API with realistic data
+  </Card>
+  <Card
+    title="Codespaces Ready"
+    icon="cloud"
+  >
+    Start coding in seconds without local setup
+  </Card>
+</CardGroup>
+
+## Workshop Structure
+
+<Steps>
+  <Step title="Setup">
+    Get your development environment ready with GitHub Codespaces or local installation
+  </Step>
+  <Step title="Learn TDD">
+    Understand the Red-Green-Refactor methodology and test structure
+  </Step>
+  <Step title="Build Iteratively">
+    Complete 5 iterations, each adding new functionality through TDD
+  </Step>
+  <Step title="Reference">
+    Access type definitions, API endpoints, and commands as needed
+  </Step>
+</Steps>

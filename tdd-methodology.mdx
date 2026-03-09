@@ -1,0 +1,309 @@
+---
+title: TDD Methodology
+description: Understanding the Red-Green-Refactor cycle and Test-Driven Development philosophy
+---
+
+# TDD Methodology
+
+Test-Driven Development (TDD) is a software development approach where you write tests before writing the actual implementation code. This workshop teaches you TDD by building a mini Mercadona app step by step.
+
+## Why TDD?
+
+TDD provides several key benefits:
+
+- **Confidence**: You know your code works because tests prove it
+- **Better design**: Writing tests first forces you to think about the API before implementation
+- **Living documentation**: Tests serve as examples of how your code should be used
+- **Faster debugging**: When something breaks, you know immediately what and where
+- **Refactoring safety**: You can improve code without fear of breaking functionality
+
+<Note>
+TDD is not about testing—it's about **design**. Tests are the byproduct of thinking through your problem before coding.
+</Note>
+
+## The Red-Green-Refactor Cycle
+
+TDD follows a simple three-phase cycle that you'll repeat for every feature:
+
+<Steps>
+  <Step title="Red: Write a failing test">
+    Start by writing a test that describes the behavior you want. Run it and **watch it fail**. This failure proves that:
+    - Your test is actually testing something
+    - The feature doesn't exist yet
+    
+    ```tsx
+    // Example: Testing category list rendering
+    it('should render the list of categories in the navigation', async () => {
+      render(<App />)
+      
+      const navigation = screen.getByRole('navigation')
+      const categories = within(navigation).getAllByRole('listitem')
+      
+      expect(categories).toHaveLength(3)
+      expect(categories[0]).toHaveTextContent('Fruta y verdura')
+    })
+    ```
+    
+    **Status**: Test fails (RED) because navigation doesn't render categories yet.
+  </Step>
+
+  <Step title="Green: Write minimal code to make it pass">
+    Write just enough code to make the test pass. Don't worry about perfection—focus on making it work.
+    
+    ```tsx
+    // Minimal implementation
+    export const Navigation = () => {
+      const [categories, setCategories] = useState([])
+      
+      useEffect(() => {
+        fetch('/categories')
+          .then(res => res.json())
+          .then(data => setCategories(data))
+      }, [])
+      
+      return (
+        <nav>
+          <ul>
+            {categories.map(cat => (
+              <li key={cat.id}>{cat.displayName}</li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+    ```
+    
+    **Status**: Test passes (GREEN).
+  </Step>
+
+  <Step title="Refactor: Clean up while keeping tests green">
+    Now improve the code without changing behavior. Your tests protect you—if they still pass, you haven't broken anything.
+    
+    ```tsx
+    // Refactored version
+    export const Navigation = () => {
+      const [categories, setCategories] = useState<Category[]>([])
+      
+      useEffect(() => {
+        const fetchCategories = async () => {
+          const response = await fetch('/categories')
+          const data = await response.json()
+          setCategories(data)
+        }
+        
+        fetchCategories()
+      }, [])
+      
+      return (
+        <nav className="navigation" role="navigation">
+          <ul className="navigation__list">
+            {categories.map(category => (
+              <li key={category.id} className="navigation__list-item">
+                {category.displayName}
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+    ```
+    
+    **Status**: Tests still pass (GREEN). Code is cleaner.
+  </Step>
+</Steps>
+
+<Tip>
+The cycle should be **fast**—each iteration might take just a few minutes. Small steps lead to steady progress.
+</Tip>
+
+## The TDD Rhythm
+
+As you work through the workshop, you'll develop a rhythm:
+
+1. Pick the next `it.todo()` test
+2. Change it to `it()` and write the test assertion
+3. **RED**: Run tests, watch it fail
+4. **GREEN**: Write minimal implementation
+5. **REFACTOR**: Clean up if needed
+6. Repeat with the next test
+
+## Real Example from the Workshop
+
+Let's see the complete cycle for Iteration 2 (displaying products):
+
+### Starting Point
+
+```tsx
+describe('Iteración 2 - Listado de productos', () => {
+  it.todo('should display the products with their prices correctly formatted')
+})
+```
+
+### Phase 1: RED
+
+```tsx
+it('should display the products with their prices correctly formatted', async () => {
+  render(<App />)
+  
+  // Wait for products to load
+  const products = await screen.findAllByRole('article')
+  
+  // Should have 24 products total (8 per category × 3 categories)
+  expect(products).toHaveLength(24)
+  
+  // Check first product has formatted price
+  const firstProduct = products[0]
+  const price = within(firstProduct).getByText(/€/)
+  expect(price).toBeInTheDocument()
+})
+```
+
+**Result**: Tests fail because products aren't being fetched or rendered.
+
+### Phase 2: GREEN
+
+Add MSW handler:
+
+```tsx
+// src/mocks/handlers.ts
+http.get('/products', () => {
+  return HttpResponse.json(productsFixtures)
+})
+```
+
+Implement product fetching:
+
+```tsx
+const [products, setProducts] = useState([])
+
+useEffect(() => {
+  fetch('/products')
+    .then(res => res.json())
+    .then(data => setProducts(data))
+}, [])
+
+return (
+  <section className="home__products-grid">
+    {products.map(product => (
+      <ProductCard
+        key={product.id}
+        name={product.displayName}
+        image={product.image}
+        price={new Intl.NumberFormat('es-ES', {
+          style: 'currency',
+          currency: 'EUR'
+        }).format(product.price)}
+      />
+    ))}
+  </section>
+)
+```
+
+**Result**: Tests pass!
+
+### Phase 3: REFACTOR
+
+Extract price formatting logic:
+
+```tsx
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(price)
+}
+```
+
+Extract data fetching to custom hook:
+
+```tsx
+const useProducts = () => {
+  const [products, setProducts] = useState<Product[]>([])
+  
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const response = await fetch('/products')
+      const data = await response.json()
+      setProducts(data)
+    }
+    
+    fetchProducts()
+  }, [])
+  
+  return products
+}
+```
+
+**Result**: Tests still pass, code is more maintainable.
+
+## Common TDD Principles
+
+<Accordion title="Test one thing at a time">
+Each test should verify a single behavior. Don't cram multiple assertions for different features into one test.
+
+**Good**:
+```tsx
+it('should display product names', () => { ... })
+it('should format prices in euros', () => { ... })
+```
+
+**Bad**:
+```tsx
+it('should display products correctly', () => {
+  // tests names, prices, images, descriptions, click handlers...
+})
+```
+</Accordion>
+
+<Accordion title="Write the assertion first">
+When writing a test, start with the `expect()` statement. This forces you to think about the desired outcome.
+
+```tsx
+it('should close dialog when clicking close button', async () => {
+  // ... setup code ...
+  
+  // Start here: what do you want to verify?
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  
+  // Then work backward: what actions lead to this?
+  const closeButton = screen.getByRole('button', { name: /close/i })
+  await userEvent.click(closeButton)
+  
+  // What's the initial state?
+  render(<App />)
+  const product = screen.getByText('Plátano de Canarias IGP')
+  await userEvent.click(product)
+})
+```
+</Accordion>
+
+<Accordion title="Keep tests independent">
+Each test should be able to run in isolation. Use `beforeEach` for setup if needed:
+
+```tsx
+beforeEach(() => {
+  window.history.replaceState({}, '', '/')
+})
+```
+
+The workshop's `setupTests.ts` already handles this for you.
+</Accordion>
+
+<Accordion title="Trust the red">
+Always see your test fail before making it pass. If it passes immediately, either:
+- The feature already exists
+- Your test isn't testing what you think it is
+
+This is why we run `npm test` continuously in watch mode.
+</Accordion>
+
+<Info>
+The workshop provides MSW (Mock Service Worker) handlers so you can test API integration without a real backend. This is a key TDD practice: **isolate what you're testing**.
+</Info>
+
+## Next Steps
+
+Now that you understand the TDD methodology, learn about:
+
+- [How to Work Through the Workshop](/how-to-work) - Practical workflow for completing iterations
+- [Test Structure](/test-structure) - Understanding the test file organization and helpers

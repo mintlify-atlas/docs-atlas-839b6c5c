@@ -1,0 +1,462 @@
+---
+title: "Iteration 4: Toggle Card/List View"
+description: "Implement global state with Context API to switch between card and list view"
+---
+
+## Overview
+
+In this iteration, you'll implement a view toggle that switches between card view (compact) and list view (detailed with descriptions). You'll use React's Context API to manage this global state across components.
+
+<Tabs>
+  <Tab title="Card View">
+    <img src="https://github.com/user-attachments/assets/ae34e1e7-63c3-4b52-ab2e-47c33552d87a" alt="Card view screenshot" width="1226" height="1047" />
+  </Tab>
+  <Tab title="List View">
+    <img src="https://github.com/user-attachments/assets/65941d26-260c-4e66-8c4d-97151f0b209e" alt="List view screenshot" width="1231" height="1048" />
+  </Tab>
+</Tabs>
+
+## Learning Objectives
+
+- Create a Context provider for global state
+- Use the Context API to share state across components
+- Implement a custom hook for context access
+- Conditionally render content based on state
+- Work with the Toggle component
+
+## What's Provided
+
+<Note>
+**Toggle Component:** A ready-to-use toggle switch component is available at `src/components/toggle/Toggle.tsx`.
+
+```typescript
+interface ToggleProps {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label?: string
+}
+```
+</Note>
+
+## Key Difference: Card vs List View
+
+<Tip>
+**Card View:** Compact display without descriptions
+- Container class: `home__products-grid`
+- Product card class: `product-card--card`
+- Description is **NOT** rendered
+
+**List View:** Detailed display with descriptions
+- Container class: `home__products-list`
+- Product card class: `product-card--list`
+- Description **IS** rendered
+</Tip>
+
+## Test Cases to Implement
+
+Open `src/pages/home/__tests__/Home.test.tsx` and implement these tests:
+
+```typescript
+describe('Iteración 4 - Toggle card/list view', () => {
+  it.todo('should display product descriptions when switching to list view')
+  it.todo('should hide product descriptions when switching back to card view')
+})
+```
+
+<Steps>
+
+### Write the tests
+
+```typescript
+import { within } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
+
+it('should display product descriptions when switching to list view', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  // Wait for products to load
+  await screen.findByText('Aguacate')
+  
+  // Initially, descriptions should not be visible
+  expect(screen.queryByText(/cremoso y nutritivo/i)).not.toBeInTheDocument()
+  
+  // Find and click the toggle
+  const toggle = screen.getByRole('switch')
+  await user.click(toggle)
+  
+  // Description should now be visible
+  const description = screen.getByText(/cremoso y nutritivo/i)
+  expect(description).toBeInTheDocument()
+})
+
+it('should hide product descriptions when switching back to card view', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  
+  await screen.findByText('Aguacate')
+  
+  // Switch to list view
+  const toggle = screen.getByRole('switch')
+  await user.click(toggle)
+  
+  // Verify description is visible
+  expect(screen.getByText(/cremoso y nutritivo/i)).toBeInTheDocument()
+  
+  // Switch back to card view
+  await user.click(toggle)
+  
+  // Description should be hidden again
+  expect(screen.queryByText(/cremoso y nutritivo/i)).not.toBeInTheDocument()
+})
+```
+
+### Run tests - they should fail (RED)
+
+```bash
+npm test
+```
+
+### Create the ViewModeContext
+
+Create a new file `src/contexts/ViewModeContext.tsx`:
+
+```typescript
+import { createContext, useContext, useState } from 'react'
+
+type ViewMode = 'card' | 'list'
+
+interface ViewModeContextType {
+  viewMode: ViewMode
+  toggleViewMode: () => void
+}
+
+const ViewModeContext = createContext<ViewModeContextType | null>(null)
+
+export const ViewModeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'card' ? 'list' : 'card')
+  }
+
+  return (
+    <ViewModeContext.Provider value={{ viewMode, toggleViewMode }}>
+      {children}
+    </ViewModeContext.Provider>
+  )
+}
+
+export const useViewMode = () => {
+  const context = useContext(ViewModeContext)
+  if (!context) {
+    throw new Error('useViewMode must be used within a ViewModeProvider')
+  }
+  return context
+}
+```
+
+### Wrap your app with the provider
+
+In your root component or `App.tsx`:
+
+```typescript
+import { ViewModeProvider } from './contexts/ViewModeContext'
+
+function App() {
+  return (
+    <ViewModeProvider>
+      <AppRoutes />
+    </ViewModeProvider>
+  )
+}
+```
+
+### Add the toggle to your header/navigation
+
+```typescript
+import { Toggle } from '../../components/toggle/Toggle'
+import { useViewMode } from '../../contexts/ViewModeContext'
+
+const Header = () => {
+  const { viewMode, toggleViewMode } = useViewMode()
+  
+  return (
+    <header className="header">
+      {/* ... other header content ... */}
+      <Toggle
+        checked={viewMode === 'list'}
+        onChange={() => toggleViewMode()}
+        label="Vista lista"
+      />
+    </header>
+  )
+}
+```
+
+### Update ProductCard to handle both views
+
+```typescript
+import { useViewMode } from '../../contexts/ViewModeContext'
+import type { Product } from '../../types'
+import './ProductCard.css'
+
+interface ProductCardProps {
+  product: Product
+}
+
+export const ProductCard = ({ product }: ProductCardProps) => {
+  const { viewMode } = useViewMode()
+  
+  const formattedPrice = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(product.price)
+
+  return (
+    <article className={`product-card product-card--${viewMode}`}>
+      <div className="product-card__image-wrapper">
+        <img
+          className="product-card__image"
+          src={product.image}
+          alt={product.displayName}
+        />
+      </div>
+      <div className="product-card__content">
+        <h3 className="product-card__name">{product.displayName}</h3>
+        {viewMode === 'list' && product.description && (
+          <p className="product-card__description">{product.description}</p>
+        )}
+        <div className="product-card__footer">
+          <span className="product-card__price">{formattedPrice}</span>
+        </div>
+      </div>
+    </article>
+  )
+}
+```
+
+### Update Home to use dynamic class names
+
+```typescript
+import { useViewMode } from '../../contexts/ViewModeContext'
+
+const Home = () => {
+  const { viewMode } = useViewMode()
+  const [products, setProducts] = useState<Product[]>([])
+  
+  // ... fetch logic ...
+  
+  const containerClass = viewMode === 'card' 
+    ? 'home__products-grid' 
+    : 'home__products-list'
+  
+  return (
+    <section className={containerClass}>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </section>
+  )
+}
+```
+
+### Verify tests pass (GREEN)
+
+```bash
+npm test
+```
+
+</Steps>
+
+## Understanding Context API
+
+<Note>
+The Context API solves the "prop drilling" problem by allowing you to share state across components without passing props through every level.
+
+**Three key parts:**
+1. **Context creation:** `createContext()`
+2. **Provider:** Wraps your component tree and provides the value
+3. **Consumer:** Uses `useContext()` to access the value
+</Note>
+
+## The ViewModeProvider Pattern
+
+```typescript
+type ViewMode = 'card' | 'list'
+
+interface ViewModeContextType {
+  viewMode: ViewMode           // Current view mode
+  toggleViewMode: () => void   // Function to toggle between modes
+}
+```
+
+**Why this pattern?**
+- Encapsulates state logic in one place
+- Provides a clean API (`useViewMode()`) for consumers
+- Throws error if used outside provider (catches mistakes early)
+
+## Conditional Rendering in ProductCard
+
+<CodeGroup>
+
+```typescript Card View (Default)
+// Description is NOT rendered
+<article className="product-card product-card--card">
+  <div className="product-card__image-wrapper">
+    <img src={product.image} alt={product.displayName} />
+  </div>
+  <div className="product-card__content">
+    <h3>{product.displayName}</h3>
+    {/* NO DESCRIPTION */}
+    <span className="product-card__price">{formattedPrice}</span>
+  </div>
+</article>
+```
+
+```typescript List View
+// Description IS rendered
+<article className="product-card product-card--list">
+  <div className="product-card__image-wrapper">
+    <img src={product.image} alt={product.displayName} />
+  </div>
+  <div className="product-card__content">
+    <h3>{product.displayName}</h3>
+    {viewMode === 'list' && product.description && (
+      <p className="product-card__description">{product.description}</p>
+    )}
+    <span className="product-card__price">{formattedPrice}</span>
+  </div>
+</article>
+```
+
+</CodeGroup>
+
+## Implementation Hints
+
+<Accordion title="How do I create a Context?">
+
+Use `createContext` with a type and initial value:
+
+```typescript
+const ViewModeContext = createContext<ViewModeContextType | null>(null)
+```
+
+Initial value is `null` because context should only be accessed within the provider.
+
+</Accordion>
+
+<Accordion title="Why create a custom useViewMode hook?">
+
+It provides:
+1. Better error messages ("must be used within provider")
+2. Type safety (no need to check for null everywhere)
+3. Cleaner import syntax
+
+```typescript
+// With custom hook
+const { viewMode, toggleViewMode } = useViewMode()
+
+// Without custom hook (verbose)
+const context = useContext(ViewModeContext)
+if (!context) throw new Error('...')
+const { viewMode, toggleViewMode } = context
+```
+
+</Accordion>
+
+<Accordion title="How do I toggle between two values?">
+
+Use a ternary operator in the state setter:
+
+```typescript
+const toggleViewMode = () => {
+  setViewMode(prev => prev === 'card' ? 'list' : 'card')
+}
+```
+
+This pattern works for any binary toggle.
+
+</Accordion>
+
+<Accordion title="When should I use Context vs Props?">
+
+**Use Context when:**
+- Value is needed by many components at different nesting levels
+- Passing props through multiple levels becomes cumbersome
+- Value represents global/shared state (theme, auth, view mode)
+
+**Use Props when:**
+- Only parent and direct children need the value
+- Value is specific to a component instance
+- You want component to be reusable in different contexts
+
+</Accordion>
+
+## Common Issues
+
+<Tip>
+**Issue:** "Cannot read property 'viewMode' of null"
+
+**Solution:** Make sure you wrapped your app with `ViewModeProvider`:
+
+```typescript
+<ViewModeProvider>
+  <App />
+</ViewModeProvider>
+```
+</Tip>
+
+<Tip>
+**Issue:** Descriptions always show or never show
+
+**Solution:** Check the conditional rendering logic:
+
+```typescript
+{viewMode === 'list' && product.description && (
+  <p>{product.description}</p>
+)}
+```
+
+Both conditions must be true for description to render.
+</Tip>
+
+<Tip>
+**Issue:** Toggle state doesn't persist when navigating
+
+**Solution:** This is expected! Context state resets when the provider unmounts. If you need persistence, combine Context with `localStorage`:
+
+```typescript
+const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  return (localStorage.getItem('viewMode') as ViewMode) || 'card'
+})
+
+const toggleViewMode = () => {
+  setViewMode(prev => {
+    const next = prev === 'card' ? 'list' : 'card'
+    localStorage.setItem('viewMode', next)
+    return next
+  })
+}
+```
+</Tip>
+
+## Verification
+
+Run the app and verify:
+
+```bash
+npm start
+```
+
+- Toggle should appear in the header/navigation
+- Initially, products show in card view (compact, no descriptions)
+- Click toggle to switch to list view
+- Products should now show descriptions
+- Container class should change from `home__products-grid` to `home__products-list`
+- Click toggle again to return to card view
+- Descriptions should disappear
+
+## Next Steps
+
+Fantastic work implementing global state with Context API! Now move on to the final iteration: [Iteration 5: Product Modal](/iterations/iteration-5) where you'll implement a dialog to show product details.
